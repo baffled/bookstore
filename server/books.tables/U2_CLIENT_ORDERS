@@ -1,0 +1,32 @@
+!SCRIPT MAKETABLE %f %i
+* ---------------------------------------------------------------------------
+*  @@Name        : U2_CLIENT_ORDERS
+*  @@Description : Table Definition for U2_CLIENT_ORDERS
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO{}
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Version Stamp
+!V!
+* ---------------------------------------------------------------------------
+$INCLUDE books.tables DEFAULT
+ 
+BEGIN TABLE U2_CLIENT_ORDERS
+TYPE 18
+MODULO 503
+SEPARATION 2
+   FIELD ID FNO 0 COLHEAD \Id\ LEN 10 JUST L
+   FIELD ORDER_IDS FNO 1 COLHEAD \Order_ids\ LEN 6 JUST L MVED
+   PHRASE ALL_FIELDS \ID ORDER_IDS\
+   PHRASE DATA_FIELDS \ID ORDER_IDS\
+ENDDEFN

@@ -1,0 +1,11 @@
+PROGRAM
+Crt 'Client id : ':
+Input ClientId
+If ClientId = '' Then STOP
+
+Call u2_getClientData( ClientId, ClientData, ErrText)
+Crt '[ClientData]'
+Crt ClientData
+Crt 'ErrText]'
+Crt ErrText
+STOP

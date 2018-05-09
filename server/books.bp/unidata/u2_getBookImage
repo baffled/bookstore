@@ -1,0 +1,54 @@
+$BASICTYPE "P"
+SUBROUTINE u2_getBookImage( TitleId, Image, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_getBookImage
+*  @@Description : Get the display image for a book
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO{
+*  }
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$INCLUDE u2_common.h
+Image = ''
+ErrText = ''
+OPEN 'U2_IMAGES' TO F.IMAGES ELSE
+ErrText = 'Cannot open the images file'
+RETURN
+END
+* Because this holds binary data it is opened as a sequential (O/S) file:
+Key = TitleId :'.jpg'
+OPENSEQ 'U2_IMAGES',Key TO FL ELSE
+ErrText = 'No image'
+RETURN
+END
+* The Status statement returns an array of file information
+STATUS FStat FROM FL ELSE
+FStat = ''
+END
+FileLength = FStat<6>
+* Read that much in
+READBLK Image FROM FL, FileLength ELSE
+ErrText = 'Error reading image'
+END
+* And always close the file after to release resources and locks
+CLOSESEQ FL
+RETURN
+

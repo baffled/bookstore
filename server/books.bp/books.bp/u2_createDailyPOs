@@ -1,0 +1,131 @@
+SUBROUTINE u2_createDailyPOs( OrderDate, PurchaseOrders, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_createDailyPOs
+*  @@Description : Create purchase orders for book sales
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO {
+*     This checks any new book sales for a given date and builds purchase
+*     orders to ensure stock quantities, keeping track of the minimum stock
+*     and purchase sizes.
+*  }
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+* 
+* --------------------------------------------------------------------------
+$OPTIONS PICK
+$INCLUDE books.bp u2_common.h
+$INCLUDE books.inc U2_ORDERS.h
+$INCLUDE books.inc U2_BOOKS.h
+$INCLUDE books.inc U2_PURCHASES.h
+$INCLUDE books.inc U2_SUPPLIERS.h
+EQU SUPPLIER.ID      To 1
+EQU SUPPLIER.BOOK.ID To 2
+EQU SUPPLIER.QTY     To 3
+EQU SUPPLIER.ISBN    To 4
+EQU SUPPLIER.PRICE   To 5
+EQU SUPPLIER.TAX     To 6
+TodayStock = ''
+SupplierList = ''
+* Get a list of all orders for this date
+Selection = 'SSELECT U2_ORDERS WITH ORDER_DATE = "':OConv(OrderDate,"D4"):'"'
+Execute Selection, SELECT. > ORDERLIST
+Finished = @False
+Loop
+ReadNext OrderId From ORDERLIST Else Finished = @True
+Until Finished Do
+Read OrderRec From F.ORDERS, OrderId Then
+GoSub AddOrder
+End
+Repeat
+* Now run through the daily stock comparing it with the stock on file.
+* If it can be fulfilled, reduce the stock on file.
+* If not, calculate what we need to order in multiples of the minimum stock.
+NoTitles = DCount(TodayStock,@FM)
+For BookId = 1 to NoTitles
+Qty = TodayStock<BookId>
+If Qty > 0 Then
+ReadU BookRec From F.BOOKS, BookId Else
+ErrText = 'Error : Cannot find book id ':BookId
+Release F.BOOKS, BookId
+RETURN
+End
+Stock = BookRec<U2_BOOKS.STOCK_LEVEL>
+If Stock >= Qty Then
+TodayStock<BookId> = 0
+BookRec<U2_BOOKS.STOCK_LEVEL> = BookRec<U2_BOOKS.STOCK_LEVEL> - Qty
+End Else
+Needed = Qty - Stock
+MinOrder = BookRec<U2_BOOKS.MIN_ORDER>
+More = MinOrder - Mod(Needed, MinOrder)
+TodayStock<BookId> = Needed + More
+* for demonstration purposes, assume that all stock will be received
+BookRec<U2_BOOKS.STOCK_LEVEL> = More ;* amount left over
+* Now add this to the list of book orders for the preferred supplier
+SupplierId = BookRec<U2_BOOKS.SUPPLIER_ID>
+Locate SupplierId In SupplierList<SUPPLIER.ID> Setting Pos Else
+Pos = DCount(SupplierList<SUPPLIER.ID>,@VM) + 1
+SupplierList<SUPPLIER.ID,Pos> = SupplierId
+End
+Ct = DCount(SupplierList<SUPPLIER.BOOK.ID, Pos>,@SVM) + 1
+SupplierList<SUPPLIER.BOOK.ID,Pos, Ct> = BookId
+SupplierList<SUPPLIER.QTY, Pos, Ct> = Needed + More
+SupplierList<SUPPLIER.ISBN,Pos, Ct> = BookRec<U2_BOOKS.ISBN>
+SupplierList<SUPPLIER.PRICE, Pos, Ct> = BookRec<U2_BOOKS.PURCH_PRICE>
+SupplierList<SUPPLIER.TAX, Pos, Ct> = BookRec<U2_BOOKS.TAX_CODE>
+End
+Write BookRec On F.BOOKS, BookId
+End
+Next I
+* Finally turn the supplier list into a series of purchase orders
+NoPOs = DCount(SupplierList<SUPPLIER.ID>,@VM)
+For I = 1 to NoPOs
+SupplierId = SupplierList<SUPPLIER.ID,I>
+PurchaseRec = ''
+PurchaseRec<U2_PURCHASES.ORDER_DATE> = OrderDate
+PurchaseRec<U2_PURCHASES.SUPPLIER_ID> = SupplierId
+* get a standard shipping cost from the supplier
+ReadV ShipCost From F.SUPPLIERS, SupplierId, U2_SUPPLIERS.SHIP_COST Else
+ShipCost = 0
+End
+PurchaseRec<U2_PURCHASES.SHIP_COST> = ShipCost
+NoItems = DCount(SupplierList<SUPPLIER.BOOK.ID,I>,@SVM)
+For J = 1 To NoItems
+PurchaseRec<U2_PURCHASES.BOOK_ID,J> = SupplierList<SUPPLIER.BOOK.ID,I,J>
+PurchaseRec<U2_PURCHASES.ISBN,J> = SupplierList<SUPPLIER.ISBN,I,J>
+PurchaseRec<U2_PURCHASES.PRICE,J> = SupplierList<SUPPLIER.PRICE,I,J>
+PurchaseRec<U2_PURCHASES.TAX_CODE,J> = SupplierList<SUPPLIER.TAX,I,J>
+PurchaseRec<U2_PURCHASES.ORDER_QTY,J> = SupplierList<SUPPLIER.QTY,I,J>
+Next J
+Call U2_GetNextPO( Counter )
+Write PurchaseRec On F.PURCHASES, Counter
+PurchaseOrders<-1> = Counter
+Next I
+RETURN
+* --------------------------------------------------------------------------
+* AddOrder
+* --------------------------------------------------------------------------
+AddOrder:  
+NoLines = DCount(OrderRec<U2_ORDERS.BOOK_ID>,@VM)
+For LineNo = 1 To NoLines
+BookId = OrderRec<U2_ORDERS.BOOK_ID,LineNo>
+Qty    = OrderRec<U2_ORDERS.QTY, LineNo>
+TodayStock<BookId> = TodayStock<BookId> + Qty
+Next LineNo
+Return
+

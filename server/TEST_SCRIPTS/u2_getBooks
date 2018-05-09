@@ -1,0 +1,108 @@
+! Test for book search
+$INCLUDE books.inc U2_BOOKS.h
+$INCLUDE books.inc U2_ORDERS.h
+$INCLUDE books.inc U2_PURCHASES.h
+$INCLUDE books.inc U2_BOOK_SUMMARY.h
+
+GoSub Init
+GoSub ShouldFindBooksByTitle
+GoSub ShouldFindBooksByAuthor
+GoSub ShouldFindBooksByISBN
+
+STOP
+
+* --------------------------------------------------------------------------
+* Init
+* --------------------------------------------------------------------------
+Init:
+Open 'U2_BOOKS' To U2_BOOKS Else
+  Error 'Cannot open U2_BOOKS'
+  STOP
+End
+
+BookRec = ''
+  BookRec<U2_BOOKS.TITLE> = 'First Book'
+  BookRec<U2_BOOKS.ISBN> = '1000000001'
+  BookRec<U2_BOOKS.AUTHOR_ID> = 1
+  
+  Write BookRec On U2_BOOKS, '1'
+  
+  BookRec = ''
+  BookRec<U2_BOOKS.TITLE> = 'Second Book'
+  BookRec<U2_BOOKS.ISBN> = '1000000002'
+  BookRec<U2_BOOKS.AUTHOR_ID> = 2
+  
+  Write BookRec On U2_BOOKS, '2'
+  
+  BookRec = ''
+  BookRec<U2_BOOKS.TITLE> = 'Third Book'
+  BookRec<U2_BOOKS.ISBN> = '1000000003'
+  BookRec<U2_BOOKS.AUTHOR_ID> = 3
+  
+  Write BookRec On U2_BOOKS, '3'
+  
+  BookRec = ''
+  BookRec<U2_BOOKS.TITLE> = 'Second Book Again'
+  BookRec<U2_BOOKS.ISBN> = '1000000004'
+  BookRec<U2_BOOKS.AUTHOR_ID> = 2
+  
+  Write BookRec On U2_BOOKS, '4'
+  
+  
+Return
+
+
+* --------------------------------------------------------------------------
+* CallSub
+* --------------------------------------------------------------------------
+CallSub:
+  
+  ErrText = ''
+  BookList = ''
+  Call u2_getBooks( SearchData, BookList, ErrText)
+Return
+
+* --------------------------------------------------------------------------
+* ShouldFindBooksByTitle
+* --------------------------------------------------------------------------
+ShouldFindBooksByTitle:
+  Announce "Should Find Book by Title"
+  
+  SearchData = "SECOND"
+  GoSub CallSub
+  
+  AssertEmpty "There should be no error", ErrText
+  AssertIs "There should be two books", DCount(BookList<U2_BOOK.SUMMARY_TITLE_ID>,@VM), 2
+  AssertHas "Should have second book", BookList<U2_BOOK.SUMMARY_TITLE>,"Second Book"
+  AssertHas "Should have fourth book", BookList<U2_BOOK.SUMMARY_TITLE>,"Second Book Again"
+  
+  
+  Return
+* --------------------------------------------------------------------------
+* ShouldFindBooksByAuthor
+* --------------------------------------------------------------------------
+ShouldFindBooksByAuthor:
+  Announce "Should Find Book by Author"
+  AuthorRec = Read("U2_AUTHORS", 3)
+  SearchData = AuthorRec<1>
+  GoSub CallSub
+  
+  AssertEmpty "There should be no error", ErrText
+  AssertIs "There should be 1 book", BookList<U2_BOOK.SUMMARY_TITLE_ID>, 3
+  AssertHas "Should have third book", BookList<U2_BOOK.SUMMARY_TITLE>,"Third Book"
+  
+  Return
+* --------------------------------------------------------------------------
+* ShouldFindBooksByISBN
+* --------------------------------------------------------------------------
+ShouldFindBooksByISBN:
+  Announce "Should Find Book by ISBN"
+  SearchData = "1000000001"
+  GoSub CallSub
+  
+  AssertEmpty "There should be no error", ErrText
+  AssertIs "There should be 1 book", BookList<U2_BOOK.SUMMARY_TITLE_ID>, 1
+  AssertHas "Should have first book", BookList<U2_BOOK.SUMMARY_TITLE>,"First Book"
+  
+  Return
+  

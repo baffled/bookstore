@@ -1,0 +1,13 @@
+      SUBROUTINE UpdateBookFromREST( BookDetails, ErrText )
+      ErrText = ''
+
+* Update a book from REST
+      Open 'VOC' To VOC Then
+         ReadU Dummy From VOC,'REST_DEBUG' Else
+            Dummy = ''
+         End
+         Write BookDetails On VOC,'REST_DEBUG'
+      End
+      RETURN
+
+

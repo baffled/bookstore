@@ -1,0 +1,68 @@
+$IFDEF UNIDATA
+$BASICTYPE "P"
+$ENDIF
+     SUBROUTINE u2_calcOrderTotal(Total, OrderRec)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_calcOrderTotal
+*  @@Description : Calculate the total value of an order
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO {
+*     This calculates the total value of a sales order.
+*     It can be called from a client or from an IDescriptor dictionary.
+*  }
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+* 
+* --------------------------------------------------------------------------
+     
+$IFDEF UNIVERSE
+$OPTIONS PICK
+$ENDIF
+     
+$INCLUDE books.bp u2_common.h
+$INCLUDE books.inc U2_ORDERS.h
+$INCLUDE books.inc U2_SALESTAX.h
+     
+     
+     Total = 0
+     Total = OrderRec<U2_ORDERS.SHIP_COST>
+     NoLines = DCount(OrderRec<U2_ORDERS.BOOK_ID>,@VM)
+     LastTaxCode = ''
+     LastTaxRate = 0
+     For I = 1 To NoLines
+        LineTotal = OrderRec<U2_ORDERS.QTY,I> * OrderRec<U2_ORDERS.PRICE,I>
+        TaxCode = OrderRec<U2_ORDERS.TAX_CODE,I>
+        If TaxCode <> '' Then
+           If TaxCode = LastTaxCode Then
+              TaxRate = LastTaxRate
+           End Else
+              ReadV TaxRate From F.SALESTAX, TaxCode, U2_SALESTAX.RATE Else
+                 TaxRate = 0
+              End
+              LastTaxCode = TaxCode
+              LastTaxRate = TaxRate
+           End
+           
+           SalesTax = LineTotal * TaxRate / 100
+           LineTotal = LineTotal + SalesTax
+        End
+        Total += LineTotal
+     Next I
+     Total = Int(Total)
+     RETURN

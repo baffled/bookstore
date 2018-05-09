@@ -1,0 +1,276 @@
+     SUBROUTINE u2_recommender_v1( Action, InData, OutData, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_recommender_v1
+*  @@Description : Simply recommend books (first version)
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO {
+*    This takes a 'traditional' MultiValue approach storing the pairing
+*    counts in files. These are fast to access but the build process is
+*    relatively slow as the data sets get larger.
+*  }
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$IFDEF UNIVERSE
+$OPTIONS PICK
+$ENDIF
+$INCLUDE books.inc U2_BOOKS.h
+$INCLUDE books.inc U2_ORDERS.h
+     
+$INCLUDE books.inc u2_recommender.h
+     
+     OutData = ''
+     ErrText = ''
+     
+     Open 'U2_ORDERS' To F.ORDERS Else
+        ErrText = 'Cannot open ORDERS'
+        RETURN
+     End
+     Open 'U2_BOOKS' To F.BOOKS Else
+        ErrText = 'Cannot open BOOKS'
+        RETURN
+     End
+     
+     Fatal = @False
+     
+     FileName = 'U2_PAIRS'
+     GoSub OpenOrCreate
+     If Fatal Then
+        RETURN
+     End
+     F.PAIRS = FL
+     
+     FileName = 'U2_CLIENT_BOOKS'
+     GoSub OpenOrCreate
+     If Fatal Then
+        Return
+     End
+     F.CLIENT_BOOKS = FL
+     
+     FileName = 'U2_BOOK_CLIENTS'
+     GoSub OpenOrCreate
+     If Fatal Then
+        RETURN
+     End
+     F.BOOK_CLIENTS = FL
+     
+     
+     Begin Case
+     Case Action = RECOMMEND_ACTION.BUILD
+        GoSub Build
+     Case Action = RECOMMEND_ACTION.ORDER
+        GoSub BuildOrder
+     Case Action = RECOMMEND_ACTION.REPORT
+        Gosub Report
+     Case Action = RECOMMEND_ACTION.RECOMMEND
+        GoSub Recommend
+     Case Action = RECOMMEND_ACTION.CLEAR
+        GoSub ClearDown
+     End Case
+     
+     RETURN
+     
+     
+* --------------------------------------------------------------------------
+* Build : build the initial sets, with the ability to select back a subset
+* --------------------------------------------------------------------------
+Build:
+     Limit = InData<1>
+     Line = ''
+     Ct = 0
+     
+     ClearFile F.PAIRS
+     
+     Select F.ORDERS
+     Fin = @False
+     Loop
+        Ct += 1
+        ReadNext OrderId Else Fin = @TRUE
+     Until Fin Or (Limit And (Ct > Limit)) Do
+        GoSub BuildOrderToModel
+     Repeat
+     
+     Return
+     
+* --------------------------------------------------------------------------
+* BuildOrder : add a new order into the data set
+* --------------------------------------------------------------------------
+BuildOrder:
+     
+     OrderId = InData<1>
+     GoSub BuildOrderToModel
+     Return
+     
+*---------------------------------------------------------------------------
+* BuildOrderToModel
+*---------------------------------------------------------------------------
+BuildOrderToModel:
+     Read OrderRec From F.ORDERS, OrderId Else
+        Return
+     End
+     ClientId = OrderRec<U2_ORDERS.CLIENT_ID>
+     Read ClientBooks from F.CLIENT_BOOKS, ClientId Else
+        ClientBooks = ''
+     End
+     
+     NoClientBooks = DCount(ClientBooks,@FM)
+     
+     NoLines = DCount(OrderRec<U2_ORDERS.BOOK_ID>,@VM)
+     For ThisLine = 1 To NoLines
+        BookId = OrderRec<U2_ORDERS.BOOK_ID, ThisLine>
+        Locate BookId In ClientBooks By 'AR' Setting CPos Else
+           
+* Now record the fact that these have been bought together
+           
+           For This = 1 To NoClientBooks
+              ClientBookId = ClientBooks<This>
+              
+              Read PairRec From F.PAIRS, BookId Else
+                 PairRec = ''
+              End
+              Locate ClientBookId In PairRec<1> By 'AR' Setting Pos Else
+                 Ins ClientBookId Before PairRec<1,Pos>
+                 Ins 0 Before PairRec<2,Pos>
+              End
+              
+              PairRec<2,Pos> += 1
+              Write PairRec On F.PAIRS, BookId
+              
+              Read PairRec From F.PAIRS, ClientBookId Else
+                 PairRec = ''
+              End
+              Locate BookId In PairRec<1> By 'AR' Setting Pos Else
+                 Ins BookId Before PairRec<1,Pos>
+                 Ins 0 Before PairRec<2,Pos>
+              End
+              
+              PairRec<2,Pos> += 1
+              Write PairRec On F.PAIRS, ClientBookId
+           Next
+           
+* and update the list for the next time
+           Ins BookId Before ClientBooks<CPos>
+           NoClientBooks += 1
+        End
+        
+     Next
+     Write ClientBooks On F.CLIENT_BOOKS, ClientId
+     
+     
+     Return
+     
+*---------------------------------------------------------------------------
+* ClearDown
+*---------------------------------------------------------------------------
+ClearDown:
+     return
+     
+*---------------------------------------------------------------------------
+* OpenOrCreate
+*---------------------------------------------------------------------------
+OpenOrCreate:
+     Open FileName To FL Else
+        Cmd = 'CREATE.FILE ':FileName:' 1,1 DYNAMIC'
+        Execute Cmd
+        Sleep 1
+        Open FileName To FL Else
+           ErrText = 'Cannot open or create ':FileName
+           Fatal = @TRUE
+        End
+     End
+     
+     Return
+*---------------------------------------------------------------------------
+* Recommend
+*---------------------------------------------------------------------------
+Recommend:
+     
+     MyBookId   = InData<1>
+     MyClientId = InData<2>
+     Limit      = InData<3>
+     NoWeights  = InData<4>
+     
+     Read BookRec From F.BOOKS, MyBookId Else
+        BookRec = ''
+     End
+     AuthorId = BookRec<U2_BOOKS.AUTHOR_ID>
+     Genre    = BookRec<U2_BOOKS.GENRE>
+     
+     Read PairRec From F.PAIRS, MyBookId Else
+        PairRec = ''
+     End
+     
+     BookList = Raise(PairRec<1>)
+     BookCounts = Raise(PairRec<2>)
+     
+* strip out any I have bought already     
+     NoBooks = DCount(BookList,@FM)
+     If MyClientId <> '' Then
+        Read ClientBooksRec From F.CLIENT_BOOKS, MyClientId Else
+           ClientBooksRec = ''
+        End
+        For ThisBook = NoBooks To 1 Step -1
+           Locate BookList<ThisBook> In ClientBooksRec Setting Pos Then
+              Del BookList<ThisBook>
+              Del BookCounts<ThisBook>
+              NoBooks -= 1
+           End
+        Next
+     End
+     
+* Now we apply weightings to all of these
+     If Not(NoWeights) Then
+        For ThisBook = 1 To NoBooks
+           Read BookRec From F.BOOKS, BookList<ThisBook> Then
+              Begin Case
+              Case AuthorId = BookRec<U2_BOOKS.AUTHOR_ID>
+                 BookCounts<ThisBook> = BookCounts<ThisBook> * RECOMMEND_WEIGHT.AUTHOR
+              Case Genre = BookRec<U2_BOOKS.GENRE>
+                 BookCounts<ThisBook> = BookCounts<ThisBook> * RECOMMEND_WEIGHT.GENRE
+              End Case
+           End
+        Next
+     End
+     
+* Finally organize based on their weighted counts
+     OrderedCounts = ''
+     OrderedBooks = ''
+     For ThisBook = 1 To NoBooks
+        Locate BookCounts<ThisBook> In OrderedCounts By 'DR' Setting Pos Else Null
+        Ins BookCounts<ThisBook> Before OrderedCounts<Pos>
+        Ins BookList<ThisBook> Before OrderedBooks<Pos>
+     Next
+     If Limit Then
+        OrderedBooks = OrderedBooks[@FM, 1, Limit]
+        OrderedCounts = OrderedCounts[@FM, 1, Limit]
+     End
+     
+     OutData<1> = Lower(OrderedBooks)
+     OutData<2> = Lower(OrderedCounts)
+     
+     Return
+     
+*---------------------------------------------------------------------------
+* Report
+*---------------------------------------------------------------------------
+Report:
+     
+     return
+     

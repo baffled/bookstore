@@ -1,0 +1,7 @@
+PA
+ENTER U2_SUPPLIERS _
+HEADING "Book Suppliers" _
+@(2,2) "Supplier Code" @(20,2) FIELD ID _
+@(2,4) "Full name " @(20,4) FIELD FULLNAME _
+@(2,5) "Address" @(20,5,5) FIELD ADDRESS MEMO _
+

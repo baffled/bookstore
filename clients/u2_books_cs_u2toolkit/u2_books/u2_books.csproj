@@ -1,0 +1,305 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.30729</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{D367603D-6554-4A05-B9DB-CEE0DE71286F}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>u2_books</RootNamespace>
+    <AssemblyName>u2_books</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <OldToolsVersion>3.5</OldToolsVersion>
+    <UpgradeBackupLocation />
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>blog.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Design" />
+    <Reference Include="System.Xml.Linq">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Data.DataSetExtensions">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="U2.Data.Client, Version=2.2.2.0, Culture=neutral, PublicKeyToken=20e25e560a20d05b, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Program Files\Rocket Software\U2 Toolkit for .NET\U2 Database Provider\bin\.NETFramework\v4.0\U2.Data.Client.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AboutBox1.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AboutBox1.Designer.cs">
+      <DependentUpon>AboutBox1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="BookEvents.cs" />
+    <Compile Include="Controls\ucScreen.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\ucScreen.designer.cs">
+      <DependentUpon>ucScreen.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FieldDefn.cs" />
+    <Compile Include="fInlinePrompts.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="fInlinePrompts.Designer.cs">
+      <DependentUpon>fInlinePrompts.cs</DependentUpon>
+    </Compile>
+    <Compile Include="fMain.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="fMain.Designer.cs">
+      <DependentUpon>fMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\fCreatePOs.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\fCreatePOs.Designer.cs">
+      <DependentUpon>fCreatePOs.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\fBook.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\fBook.Designer.cs">
+      <DependentUpon>fBook.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\fBookSearch.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\fBookSearch.Designer.cs">
+      <DependentUpon>fBookSearch.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\fClient.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\fClient.Designer.cs">
+      <DependentUpon>fClient.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\fClientSearch.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\fClientSearch.Designer.cs">
+      <DependentUpon>fClientSearch.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\fConnect.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\fConnect.Designer.cs">
+      <DependentUpon>fConnect.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\fDateSelect.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\fDateSelect.designer.cs">
+      <DependentUpon>fDateSelect.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\fOrderSearch.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\fOrderSearch.Designer.cs">
+      <DependentUpon>fOrderSearch.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\fReport.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\fReport.Designer.cs">
+      <DependentUpon>fReport.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\fSalesCharts.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\fSalesCharts.Designer.cs">
+      <DependentUpon>fSalesCharts.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\fSalesOrder.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\fSalesOrder.Designer.cs">
+      <DependentUpon>fSalesOrder.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\fScreen.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\fScreen.Designer.cs">
+      <DependentUpon>fScreen.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\fSelection.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\fSelection.Designer.cs">
+      <DependentUpon>fSelection.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Program.cs" />
+    <Compile Include="PromptDefn.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="AboutBox1.resx">
+      <DependentUpon>AboutBox1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\ucScreen.resx">
+      <DependentUpon>ucScreen.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="fInlinePrompts.resx">
+      <DependentUpon>fInlinePrompts.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="fMain.resx">
+      <DependentUpon>fMain.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\fCreatePOs.resx">
+      <DependentUpon>fCreatePOs.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\fBook.resx">
+      <DependentUpon>fBook.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\fBookSearch.resx">
+      <DependentUpon>fBookSearch.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\fClient.resx">
+      <DependentUpon>fClient.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\fClientSearch.resx">
+      <DependentUpon>fClientSearch.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\fConnect.resx">
+      <DependentUpon>fConnect.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\fDateSelect.resx">
+      <DependentUpon>fDateSelect.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\fOrderSearch.resx">
+      <DependentUpon>fOrderSearch.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\fReport.resx">
+      <DependentUpon>fReport.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\fSalesCharts.resx">
+      <DependentUpon>fSalesCharts.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\fSalesOrder.resx">
+      <DependentUpon>fSalesOrder.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\fScreen.resx">
+      <DependentUpon>fScreen.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\fSelection.resx">
+      <DependentUpon>fSelection.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <None Include="app.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+    <Compile Include="ScreenDefn.cs" />
+    <Compile Include="StaticData.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\u2books.uoclient\u2books.uoclient.csproj">
+      <Project>{288a741b-3c4a-46ef-87d8-dc19e80c3aa0}</Project>
+      <Name>u2books.uoclient</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\u2_books.shared\u2_books.shared.csproj">
+      <Project>{25D19FCA-1807-421F-A933-6FBCD8B53B4E}</Project>
+      <Name>u2_books.shared</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Windows.Installer.3.1">
+      <Visible>False</Visible>
+      <ProductName>Windows Installer 3.1</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\u2ugsmall.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="blog.ico" />
+    <None Include="Resources\book-clip-art-59.png" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

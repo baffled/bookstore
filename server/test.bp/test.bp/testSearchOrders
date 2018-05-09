@@ -1,0 +1,24 @@
+PROGRAM
+Crt 'Client Id ':
+Input ClientId
+
+Crt 'Surname ':
+Input Surname
+Crt 'Forename ':
+Input Forename
+Crt 'Start Date ':
+Input StartDate
+Crt 'End Date ':
+Input EndDate
+
+
+SearchData = ClientId:@FM:Surname:@FM:Forename:@FM:StartDate:@FM:EndDate
+OutData = ''
+ErrText = ''
+Call u2_searchOrders(SearchData, OutData, ErrText)
+Crt '{ErrText]':ErrText
+Crt '[OutData]'
+Crt OutData
+
+STOP
+

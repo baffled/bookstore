@@ -1,0 +1,23 @@
+PROGRAM
+Crt 'Client Id : ':
+Input ClientId
+
+Crt 'Surname : ':
+Input Surname
+
+Crt 'Forename : ':
+Input Forename
+
+SearchData = ClientId : @FM : Surname : @FM : Forename
+ClientList = ''
+ErrText = ''
+
+Call u2_searchClientXML( SearchData, ClientList, ErrText)
+
+Crt '[ErrText]'
+Crt ErrText
+
+Crt '[ClientList]'
+Crt ClientList
+
+STOP

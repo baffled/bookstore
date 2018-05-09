@@ -1,0 +1,72 @@
+$IFDEF UNIDATA
+$BASICTYPE "P"
+$ENDIF
+SUBROUTINE u2_purchaseOrderEvents( fieldName, eventName, id, record, outdata, actions)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_purchaseOrderEvents
+*  @@Description : Backing the purchase order entry screen
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$IFDEF UNIVERSE
+$OPTIONS PICK
+$ENDIF
+$INCLUDE books.source u2_common.h
+
+$INCLUDE books.inc U2_BOOKS.h
+$INCLUDE books.inc U2_AUTHORS.h
+$INCLUDE books.inc U2_PUBLISHERS.h
+$INCLUDE books.inc U2_BOOKDATA.h
+$INCLUDE books.inc U2_SALESTAX.h
+$INCLUDE books.inc U2_SUPPLIERS.h
+$INCLUDE books.inc U2_PURCHASES.h
+
+
+
+* Determine the even
+
+Begin Case
+   Case eventName = "ONENTRY"
+     GoSub DoOnEntry
+End Case
+
+RETURN
+
+* --------------------------------------------------------------------------
+* DoOnEntry: handle an onEntry event
+* --------------------------------------------------------------------------
+DoOnEntry:
+   Begin Case
+   Case fieldName = "BOOK_ID" ;* new or amended book id
+      * update the title details where necessary
+     NoTitles = DCount(record<U2_PURCHASES.BOOK_ID>,@VM)
+      For I = 1 To NoTitles
+         BookId = record<U2_PURCHASES.BOOK_ID, I>
+         Read BookRec From F.BOOKS, BookId Then
+            record<U2_PURCHASES.ISBN, I> = BookRec<U2_BOOKS.ISBN>
+            record<U2_PURCHASES.PRICE, I> = BookRec<U2_BOOKS.PURCH_PRICE>
+            record<U2_PURCHASES.TAX_CODE, I> = BookRec<U2_BOOKS.TAX_CODE>
+         End
+      Next
+   End Case
+   Return
+

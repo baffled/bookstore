@@ -1,0 +1,58 @@
+SUBROUTINE u2_getSalesOrders( InData, OutData, ErrText)
+$INCLUDE books.inc U2_CLIENTS.h
+$INCLUDE books.inc U2_ORDERS.h
+OPEN 'U2_CLIENTS' TO F.U2_CLIENTS ELSE
+ErrText = 'Cannot open U2_CLIENTS'
+RETURN
+END
+OPEN 'U2_ORDERS' TO F.U2_ORDERS ELSE
+ErrText = 'Cannot open U2_ORDERS'
+RETURN
+END
+FromDate = InData<1>
+ToDate = InData<2>
+ClientId = InData<3>
+OutData = ''
+ErrText = ''
+Cmd = "SSELECT U2_ORDERS BY.DSND ORDER_DATE BY CLIENT_ID"
+Clause = ''
+IF FromDate <> '' THEN
+Clause := 'ORDER_DATE >= "': OCONV(FromDate,"D4/"): '"'
+END
+IF ToDate <> '' THEN
+Clause<-1> = 'ORDER_DATE <= "':OCONV(ToDate,"D4/"): '"'
+END
+IF ClientId <> '' THEN
+Clause<-1> = 'CLIENT_ID = "' : ClientId : '"'
+END                                                     
+Clause = CHANGE(Clause, @FM, " AND " )
+Cmd = Cmd : ' WITH ' : Clause
+NoOrders = 0
+EXECUTE Cmd RTNLIST SLIST
+Fin = @FALSE
+LOOP
+READNEXT Id FROM SLIST ELSE Fin = @TRUE
+UNTIL Fin DO
+GOSUB Add
+REPEAT
+RETURN
+*---------------------------------------------------------------------------
+* Add
+*---------------------------------------------------------------------------
+Add:
+READ SalesRec FROM F.U2_ORDERS, Id ELSE
+RETURN
+END
+NoOrders += 1
+OutData<10, NoOrders> = Id
+OutData<11, NoOrders> = Id["*",1,1]
+OutData<12, NoOrders> = SalesRec<U2.ORDERS.ORDER.STATUS>
+ClientId = SalesRec<U2.ORDERS.CLIENT.ID>
+READ ClientRec FROM F.U2_CLIENTS, ClientId THEN
+ClientId = ClientRec<U2.CLIENTS.FORENAME>:' ':ClientRec<U2.CLIENTS.SURNAME>
+END
+OutData<13, NoOrders> = ClientId
+CALL u2_calcOrderTotal(Total, SalesRec)
+OutData<14, NoOrders> = Total
+RETURN
+

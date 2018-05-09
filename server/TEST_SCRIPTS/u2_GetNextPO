@@ -1,0 +1,62 @@
+! Test
+
+GoSub Init
+GoSub ShouldIncrementCounter
+GoSub WrapUp
+
+
+STOP
+
+* --------------------------------------------------------------------------
+* Init
+* --------------------------------------------------------------------------
+Init:
+Open 'U2_PARAMS' To U2_PARAMS Else
+  Error 'Cannot open U2_PARAMS'
+  STOP
+End
+Read OrigRec From U2_PARAMS,'NEXT.PO' Else
+  OrigRec = ''
+End
+Write OrigRec On U2_PARAMS,'NEXT.PO.bak'
+Delete U2_PARAMS,'NEXT.PO'
+
+Return
+
+* --------------------------------------------------------------------------
+* WrapUp
+* --------------------------------------------------------------------------
+WrapUp:
+
+   Write OrigRec On U2_PARAMS,'NEXT.PO'
+   Delete U2_PARAMS,'NEXT.PO.bak'
+   Return
+
+* --------------------------------------------------------------------------
+* CallSub
+* --------------------------------------------------------------------------
+CallSub:
+  Counter = 0
+  Call u2_GetNextPO(Counter)
+Return
+
+* --------------------------------------------------------------------------
+* ShouldIncrementCounter
+* --------------------------------------------------------------------------
+ShouldIncrementCounter:
+  Announce "Should Increment Counter"
+  
+  CounterRec = 'X':@FM:'1000'
+  Write CounterRec On U2_PARAMS,'NEXT.PO'
+
+  GoSub CallSub  
+  Expected = 1001  
+  AssertIs 'Should have new counter', Expected, Counter
+  
+  GoSub CallSub  
+  Expected = 1002  
+  AssertIs 'Should have new counter', Expected, Counter
+  
+Return
+
+

@@ -1,0 +1,57 @@
+$BASICTYPE "P"
+SUBROUTINE u2_reportPurchaseHistory(SearchData, Text, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_reportOrderHistory
+*  @@Description : Show the order history for a book
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO{
+*   This takes advantage of the built in enquiry language to capture a
+*   listing of orders.
+*  }
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$INCLUDE books.source u2_common.h
+$INCLUDE books.inc U2_BOOKS.h
+BookId = SearchData<1>
+Intl   = SearchData<2>
+PERFORM "TERM 132,60" ;* set the report page size
+PERFORM "CLEARSELECT ALL"
+READV BookTitle FROM F.BOOKS, BookId, U2.BOOKS.TITLE ELSE
+BookTitle = "Unknown"
+END
+Query = \SORT U2_PURCHASES BY-EXP BOOK_ID BY ORDER_DATE \
+Query := \ ORDER_DATE SUPPLIER_ID SUPPLIER_NAME DELIV_DATE\
+Query := \ WHEN BOOK_ID = "\ : BookId:\"\
+IF Intl THEN
+Query := \ PRICE_INTL TOTAL ORDER_QTY TOTAL REJECT_QTY\
+END ELSE
+Query := \ PRICE TOTAL ORDER_QTY TOTAL REJECT_QTY\
+END
+Query := \ HEADING "Purchase History for \:BookId:\ \:BookTitle:\ on 'D'"\
+Query := \ FOOTING "Page 'P'\:CHAR(12):\"\
+Query := \ ID.SUP\
+EXECUTE Query CAPTURING Text
+L = LEN(Text)
+IF Text[L,1] = CHAR(12) THEN
+Text = Text[1, L-1]
+END
+RETURN
+

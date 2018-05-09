@@ -1,0 +1,123 @@
+$BASICTYPE "P"
+SUBROUTINE u2_setBookData(BookId, BookData, LockFlag, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_setBookData
+*  @@Description : update full details for a book title
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$INCLUDE books.source u2_common.h
+$INCLUDE books.inc U2_BOOKS.h
+$INCLUDE books.inc U2_AUTHORS.h
+$INCLUDE books.inc U2_PUBLISHERS.h
+$INCLUDE books.inc U2_BOOKDATA.h
+$INCLUDE books.inc U2_SALESTAX.h
+$INCLUDE books.inc U2_SUPPLIERS.h
+ErrText = ''
+GOSUB ParseData
+IF ErrText <> '' THEN
+RETURN
+END
+BEGIN CASE
+CASE LockFlag
+WRITEU BookRec ON F.BOOKS, BookId
+CASE NOT(LockFlag)
+WRITE BookRec ON F.BOOKS, BookId
+END CASE
+GOSUB UpdateAuthorIndex
+GOSUB UpdatePublisherIndex
+RETURN
+*---------------------------------------------------------------------------
+* ParseData
+*---------------------------------------------------------------------------
+ParseData:
+READU BookRec FROM F.BOOKS, BookId ELSE
+BookRec = ''
+END
+OrigRec = BookRec
+BookRec<U2.BOOKS.TITLE> = BookData<U2.BOOKDATA.TITLE>
+BookRec<U2.BOOKS.AUTHOR.ID> = BookData<U2.BOOKDATA.AUTHOR.ID>
+BookRec<U2.BOOKS.ISBN> = BookData<U2.BOOKDATA.ISBN>
+BookRec<U2.BOOKS.DEPT> = BookData<U2.BOOKDATA.DEPT>
+BookRec<U2.BOOKS.GENRE> = BookData<U2.BOOKDATA.GENRE>
+BookRec<U2.BOOKS.MEDIA>= BookData<U2.BOOKDATA.MEDIA>
+BookRec<U2.BOOKS.PUBLISHER.ID> = BookData<U2.BOOKDATA.PUBLISHER.ID>
+BookRec<U2.BOOKS.SALE.PRICE> = BookData<U2.BOOKDATA.SALE.PRICE>
+BookRec<U2.BOOKS.STOCK.LEVEL>= BookData<U2.BOOKDATA.STOCK.LEVEL>
+BookRec<U2.BOOKS.MIN.ORDER>= BookData<U2.BOOKDATA.MIN.ORDER>
+BookRec<U2.BOOKS.ON.ORDER> = BookData<U2.BOOKDATA.ON.ORDER>
+BookRec<U2.BOOKS.RESERVED>= BookData<U2.BOOKDATA.RESERVED>
+BookRec<U2.BOOKS.TAX.CODE>= BookData<U2.BOOKDATA.TAX.CODE>
+BookRec<U2.BOOKS.SUPPLIER.ID>= BookData<U2.BOOKDATA.SUPPLIER.ID>
+BookRec<U2.BOOKS.PURCH.PRICE> = BookData<U2.BOOKDATA.PURCH.PRICE>
+BookRec<U2.BOOKS.LONG.DESCRIPTION> = BookData<U2.BOOKDATA.LONG.DESCRIPTION>
+CALL u2_ValidateBook(BookId, BookRec, ErrText)
+RETURN
+*---------------------------------------------------------------------------
+* UpdateAuthorIndex
+*---------------------------------------------------------------------------
+UpdateAuthorIndex:
+IF OrigRec<U2.BOOKS.AUTHOR.ID> = BookRec<U2.BOOKS.AUTHOR.ID> THEN
+RETURN
+END
+IF OrigRec<U2.BOOKS.AUTHOR.ID> <> '' THEN
+READU OrigIndex FROM F.AUTHORS, OrigRec<U2.BOOKS.AUTHOR.ID> THEN
+LOCATE BookId IN OrigIndex<U2.AUTHORS.BOOK.IDS> SETTING Pos THEN
+DEL OrigIndex<U2.AUTHORS.BOOK.IDS, Pos>
+END
+WRITE OrigIndex ON F.AUTHORS, OrigRec<U2.BOOKS.AUTHOR.ID>
+END ELSE
+RELEASE F.AUTHORS, OrigRec<U2.BOOKS.AUTHOR.ID>
+END
+END
+READU AuthorRec FROM F.AUTHORS, BookRec<U2.BOOKS.AUTHOR.ID> ELSE
+AuthorRec = ''
+AuthorRec<U2.AUTHORS.FULLNAME> = BookData<U2.BOOKDATA.AUTHOR.NAME>
+END
+AuthorRec<U2.AUTHORS.BOOK.IDS, -1> = BookId
+WRITE AuthorRec ON F.AUTHORS, BookRec<U2.BOOKS.AUTHOR.ID>
+RETURN
+*---------------------------------------------------------------------------
+* UpdatePublisherIndex
+*---------------------------------------------------------------------------
+UpdatePublisherIndex:
+IF OrigRec<U2.BOOKS.PUBLISHER.ID> = BookRec<U2.BOOKS.PUBLISHER.ID> THEN
+RETURN
+END
+IF OrigRec<U2.BOOKS.PUBLISHER.ID> <> '' THEN
+READU OrigIndex FROM F.PUBLISHERS, OrigRec<U2.BOOKS.PUBLISHER.ID> THEN
+LOCATE BookId IN OrigIndex<U2.PUBLISHERS.BOOK.IDS> SETTING Pos THEN
+DEL OrigIndex<U2.PUBLISHERS.BOOK.IDS, Pos>    
+END
+WRITE OrigIndex ON F.PUBLISHERS, OrigRec<U2.BOOKS.PUBLISHER.ID>
+END ELSE
+RELEASE F.PUBLISHERS, OrigRec<U2.BOOKS.PUBLISHER.ID>
+END
+END
+READU PublisherRec FROM F.PUBLISHERS, BookRec<U2.BOOKS.PUBLISHER.ID> ELSE
+PublisherRec = ''
+PublisherRec<U2.PUBLISHERS.FULLNAME> = BookData<U2.BOOKDATA.PUBLISHER.NAME>
+END
+PublisherRec<U2.PUBLISHERS.BOOK.IDS, -1> = BookId
+WRITE PublisherRec ON F.PUBLISHERS, BookRec<U2.BOOKS.PUBLISHER.ID>
+RETURN
+

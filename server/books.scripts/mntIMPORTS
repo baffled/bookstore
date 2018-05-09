@@ -1,0 +1,18 @@
+PA
+ENTER BOOK_IMPORTS _
+   HEADING "Imports" _
+   @(2,2) "Id " @(10,2) FIELD ID SEQUENTIAL _
+   @(2,3) "Title:" @(2,4) FIELD TITLE LEN 70 _
+   @(2,5) "Author" @(15,5) FIELD AUTHOR LEN 30 _
+   @(2,6) "Publisher" @(15,6) FIELD PUBLISHER _
+   @(2,7) "Media" @(15,7) FIELD MEDIA _
+   @(2,8) "ISBN" @(15,8) FIELD ISBN _
+   @(2,9) "Published" @(15,9) FIELD PUBLISHED _
+   @(2,10) "Price" @(15,10) FIELD PRICE _
+   @(2,11) "Rating" @(15,11) FIELD RATING _
+   @(2,12) "Dept" @(15,12) FIELD DEPT LIST "ADULT,JUNIOR" _
+   @(2,13) "Genre" @(15,13) FIELD GENRE _
+   @(2,14) "Synopsis" _
+   @(2,15,10) FIELD SYNOPSIS LEN 70 MEMO _
+
+

@@ -1,0 +1,81 @@
+$BASICTYPE "P"
+SUBROUTINE u2_getSalesRetention(InData, OutData, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_getSalesRetention
+*  @@Description : Return daily sales figures for new and existing clients
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$INCLUDE books.bp u2_common.h
+$INCLUDE books.inc U2_ORDERS.h
+* We want daily orders broken into those for new clients
+* and those for existing
+DIM SERIES(2)
+MAT SERIES = ''
+Dates = ''
+CALL u2_init
+ExLine = 'SSELECT U2_ORDERS BY ORDER_DATE'
+EXECUTE ExLine RTNLIST SLIST
+Fin = @FALSE
+LastDate = ''
+NoDates = 0
+LOOP
+READNEXT Id FROM SLIST ELSE Fin = @TRUE
+UNTIL Fin DO
+GOSUB Add
+REPEAT
+* Now return encoded
+ChartInfo = \{"chartType":"time"\
+ChartInfo<2> = \"cols":["Date","New","Existing"]\
+ChartInfo<3> = \"colTypes":["date","number","number"]\
+ChartInfo<4> = \"series":[[\:CONVERT(@FM,",",Dates):\],[\:CONVERT(@FM,",",SERIES(1)):\],[\:CONVERT(@FM,",",SERIES(2)):\]]}\
+OutData = CONVERT(@FM,",",ChartInfo)
+RETURN
+*---------------------------------------------------------------------------
+* Add
+*---------------------------------------------------------------------------
+Add:
+READ OrderRec FROM F.ORDERS, Id ELSE
+RETURN
+END
+OrderDate = Id["*",1,1]
+IF OrderDate <> LastDate THEN
+NoDates += 1
+Dates<NoDates> = OrderDate
+LastDate = OrderDate
+SERIES(1)<NoDates> = 0
+SERIES(2)<NoDates> = 0
+END
+ClientId = OrderRec<U2.ORDERS.CLIENT.ID>
+READ IxRec FROM F.CLIENT.ORDERS, ClientId ELSE
+IxRec = ''
+END
+IsNew = (IxRec<1,1> = Id)
+CALL u2_calcOrderTotal(Total, OrderRec)
+IF IsNew THEN
+SERIES(1)<NoDates> += Total
+END ELSE
+SERIES(2)<NoDates> += Total
+END
+RETURN
+RETURN
+

@@ -1,0 +1,24 @@
+<?xml version="1.0" ?>
+<SCREEN displayOnly="no" noClear="yes">
+<MAINFILE>U2_SUPPLIERS</MAINFILE>
+<MAINDICT>U2_SUPPLIERS</MAINDICT>
+<HEADING>Maintain Supplier Details</HEADING>
+<PROMPTS>
+  <PROMPT x="10" y="10" text="Supplier code" />
+  <PROMPT x="10" y="50" text="Supplier Name" />
+  <PROMPT x="10" y="100" text="Supplier Address" />
+  <PROMPT x="300" y="10" text="Phone" />
+  <PROMPT x="300" y="50" text="Facsimile" />
+  <PROMPT x="300" y="100" text="Email" />
+  <PROMPT x="10" y="230" text="Shipping Cost" />
+</PROMPTS>
+<FIELDS>
+  <FIELD x="100" y="10" fno="0" name="ID" length="50" depth="0" selection="SORT U2_SUPPLIERS FULLNAME" />
+  <FIELD x="100" y="50" fno="1" name="FULLNAME" length="180" depth="0" />
+  <FIELD x="100" y="100" fno="2" name="ADDRESS" length="180" conv="MD2" depth="5" tool="Memo" />
+  <FIELD x="350" y="10" fno="3" name="PHONE" length="120" depth="0"  />
+  <FIELD x="350" y="50" fno="4" name="FAX" length="120" depth="0"  />
+  <FIELD x="350" y="100" fno="5" name="EMAIL" length="120" depth="0"  />
+  <FIELD x="100" y="230" fno="10" name="SHIP_COST" length="70" depth="0" conv="MD2"  />
+</FIELDS>
+</SCREEN>

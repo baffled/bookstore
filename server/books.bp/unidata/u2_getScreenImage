@@ -1,0 +1,88 @@
+$BASICTYPE "P"
+SUBROUTINE u2_getScreenImage( FileName, FieldList, Id, Record, Image, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_getScreenImage
+*  @@Description : Get the image for a screen
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO{
+*    This updates the display information for a generic entry screen by
+*    building an array of data in the order in which the screen is presented.
+*    This is done for three reasons:
+*     a) to resolve any calculated fields using native expressions.
+*     b) to resolve any formatting (conversion codes)
+*     c) to ensure that it follows the culture and language info on the server.
+*  }
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$INCLUDE u2_common.h
+NoFields = DCOUNT(FieldList,@FM)
+OPEN 'DICT', FileName TO DFL ELSE
+ErrText = 'Cannot open DICT ':FileName
+RETURN
+END
+@RECORD = Record
+@ID     = Id
+FOR FieldNo = 1 TO NoFields
+FieldName = FieldList<FieldNo>
+GOSUB GetField
+Image<FieldNo> = Value
+NEXT FieldNo
+RETURN
+* --------------------------------------------------------------------------
+* GetField : there are quicker ways to do this, but this has the
+*            benefit of simplicity
+* --------------------------------------------------------------------------
+GetField: 
+Value = ''
+READ DictRec FROM DFL, FieldName ELSE
+RETURN
+END
+First = OCONV(TRIM(DictRec<1>),"MCU")
+BEGIN CASE
+CASE First = "I" OR First = "V"
+Value = ITYPE(DictRec)
+Conv = DictRec<3>
+CASE First = "D"
+IF DictRec<2> = 0 THEN
+Value = Id
+END ELSE
+Value = Record<DictRec<2>>
+END
+Conv = DictRec<3>
+CASE First = "A" OR First = "S" ;* horrible legacy types
+IF DictRec<2> = 0 THEN
+Value = Id
+END ELSE
+Value = Record<DictRec<2>>
+END
+IF DictRec<8> <> "" THEN
+Value = OCONV(Value, DictRec<8>)
+END
+Conv = DictRec<7>
+CASE 1
+Conv = ''
+Value = ''
+END CASE
+IF Conv <> '' THEN
+Value = OCONV(Value, Conv)
+END
+RETURN
+

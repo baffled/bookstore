@@ -1,0 +1,163 @@
+$BASICTYPE "P"
+SUBROUTINE u2_searchOrders( SearchData, OrderList, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_searchOrders
+*  @@Description : Search for orders using a traditional selection
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO{
+*    THis illustrates another technique for building XML data from within U2
+*    based systems. On UniVerse this can be extended with the built-in DOM
+*    support.
+*  }
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$INCLUDE u2_common.h
+$INCLUDE books.inc U2_AUTHORS.h
+$INCLUDE books.inc U2_CLIENTS.h
+$INCLUDE books.inc U2_BOOKS.h
+$INCLUDE books.inc U2_ORDERS.h
+ClientList = ''
+ErrText = ''
+OrderId = SearchData<1>
+ClientId = OCONV(SearchData<2>,"MCU")
+Surname = OCONV(SearchData<3>,"MCU")
+Forename = OCONV(SearchData<4>,"MCU")
+StartDate = SearchData<5>
+EndDate   = SearchData<6>
+Intl      = SearchData<7>
+READ Template FROM F.PARAMS, "ORDER_TEMPLATE" ELSE
+ErrText = "MISSING Order Template"
+RETURN
+END
+READ LineTemplate FROM F.PARAMS, "ORDER_LINE_TEMPLATE" ELSE
+ErrText = "MISSING Order Line Template"
+RETURN
+END
+IF Intl THEN
+PriceConv = "MD2,[,'.',',',]"
+END ELSE
+PriceConv = "MD2"
+END
+* If it is a cient id, se the client_orders index
+CLEARSELECT ALL
+IF ClientId <> '' THEN
+Query = 'SELECT U2_CLIENT_ORDERS "':ClientId:'" SAVING ORDER_IDS'
+GOSUB BuildQuery
+Query := ' REQUIRE.SELECT'
+END ELSE
+Query = ''
+GOSUB BuildQuery
+END
+EXECUTE Query RTNLIST SLIST
+GOSUB BuildResults
+RETURN
+* ---------------------------------------------------------------------------
+* BuildQuery : build main selection statement
+* ---------------------------------------------------------------------------
+BuildQuery: 
+Query<-1> = 'sselect U2_ORDERS'
+Query := ' BY ORDER_DATE'
+WithClause = ''
+IF OrderId <>'' THEN
+WithClause := '"':OrderId:'"'
+END ELSE
+IF Surname <> '' THEN
+WithClause = \ WITH U_SURNAME = "\:Surname:\"\
+END
+IF Forename <> '' THEN
+IF WithClause <> '' THEN WithClause := ' AND '
+WithClause := \ WITH U_FORENAME = "\:Forename:\"\
+END
+IF StartDate <> '' THEN
+IF WithClause <> '' THEN WithClause := ' AND '
+WithClause := \ WITH ORDER_DATE >= "\ : StartDate : \"\
+END
+IF EndDate <> '' THEN
+IF WithClause <> '' THEN WithClause := ' AND '
+WithClause := \ WITH ORDER_DATE <= "\ : EndDate : \"\
+END
+END
+Query := WithClause
+RETURN
+* ---------------------------------------------------------------------------
+* BuildResults
+* ---------------------------------------------------------------------------
+BuildResults:
+OrderList = '<?xml version="1.0" ?>'
+OrderList<-1> = '<ROOT>'
+NoOrders = 0
+Done = @FALSE
+LOOP
+READNEXT OrderId FROM SLIST ELSE Done = @TRUE
+UNTIL Done DO
+GOSUB AddOrder
+REPEAT
+OrderList<-1> = '</ROOT>'
+RETURN
+* ---------------------------------------------------------------------------
+* AddOrder
+* ---------------------------------------------------------------------------
+AddOrder:
+READ OrderRec FROM F.ORDERS, OrderId ELSE
+RETURN
+END
+Order = Template
+ClientId = OrderRec<U2.ORDERS.CLIENT.ID>
+READ ClientRec FROM F.CLIENTS, ClientId ELSE
+RETURN
+END
+Order = CHANGE(Order,"{ID}", OrderId)
+Order = CHANGE(Order,"{ORDER_DATE}", OCONV(FIELD(OrderId,"*",1,1),"D4"))
+Order = CHANGE(Order,"{CLIENT_ID}", ClientId)
+Order = CHANGE(Order,"{FULLNAME}", ClientRec<U2.CLIENTS.FORENAME>:' ':ClientRec<U2.CLIENTS.SURNAME>)
+Order = CHANGE(Order,"{SHIP_CODE}", OrderRec<U2.ORDERS.SHIP.ID>)
+Order = CHANGE(Order,"{SHIP_COST}", OCONV(OrderRec<U2.ORDERS.SHIP.COST>, PriceConv))
+Order = CHANGE(Order,"{DESPATCH_DATE}", OCONV(OrderRec<U2.ORDERS.DESPATCH.DATE>,'D4'))
+NoLines = DCOUNT(OrderRec<U2.ORDERS.BOOK.ID>,@VM)
+Lines = ''
+FOR I = 1 TO NoLines
+BookId = OrderRec<U2.ORDERS.BOOK.ID,I>
+READ BookRec FROM F.BOOKS, BookId ELSE
+BookRec = 'Unknown'
+END
+Line = LineTemplate
+Line = CHANGE(Line,"{BOOK_ID}",BookId)
+Line = CHANGE(Line,"{TITLE}",BookRec<U2.BOOKS.TITLE>)
+READV AuthorName FROM F.AUTHORS, BookRec<U2.BOOKS.AUTHOR.ID>, U2.AUTHORS.FULLNAME ELSE
+AuthorName = 'Unknown'
+END
+Line = CHANGE(Line,"{AUTHOR_NAME}",AuthorName)
+Line = CHANGE(Line,"{QTY}",OrderRec<U2.ORDERS.QTY, I>)
+Line = CHANGE(Line,"{PRICE}",OCONV(OrderRec<U2.ORDERS.PRICE, I>, PriceConv))
+Line = CHANGE(Line,"{TAX_CODE}",OrderRec<U2.ORDERS.TAX.CODE, I>)
+Amount = OrderRec<U2.ORDERS.QTY, I> * OrderRec<U2.ORDERS.PRICE, I>
+READV TaxRate FROM F.SALESTAX, OrderRec<U2.ORDERS.TAX.CODE, I>, 2 ELSE
+TaxRate = 0
+END
+TaxAmount = Amount * TaxRate / 100
+Line = CHANGE(Line,"{GOODS_AMT}",OCONV(Amount, PriceConv))
+Line = CHANGE(Line, "{TAX_AMT}", OCONV(TaxAmount, PriceConv))
+Lines<-1> = Line
+NEXT I
+Order = CHANGE(Order,"{LINES}",Lines)
+OrderList<-1> = Order
+RETURN
+

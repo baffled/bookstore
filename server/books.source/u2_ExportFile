@@ -1,0 +1,87 @@
+$PLATFORM UNIVERSE
+PROGRAM u2_ExportFile
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_ExportFile
+*  @@Description : Export a file to a flat (tab and pipe) delimited 
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log  
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$IFDEF UNIVERSE
+$OPTIONS PICK
+$ENDIF
+
+Prompt ''
+
+Get(Arg.) FileName Else
+  FileName = ''
+End
+If FileName = '' Then
+  Crt 'File to export : ':
+  Input FileName
+  If FileName = '' Then
+     STOP
+  End
+End
+
+Get(Arg.) TargetFile Else
+  TargetFile = ''
+End
+If TargetFile = '' Then
+  Crt 'Target file path : ':
+  Input TargetFile
+  If TargetFile = '' Then
+     STOP
+  End
+End
+
+Open FileName To FL Else
+  Crt 'Cannot open ':FileName
+  STOP
+End
+
+OpenSeq TargetFile To OFL Else
+  Create OFL Else
+    Crt 'Cannot open or create the target file ':TargetFile
+    STOP
+  End
+End
+
+Fin = @False
+TAB = Char(9)
+Ct = 0
+Select FL
+Loop
+  ReadNext Id Else Fin = @True
+Until Fin Do
+  Read Rec From FL, Id Then
+    Convert @FM:@VM To TAB:'|' In Rec
+    WriteSeq Id : TAB : Rec On OFL Else Null
+    Ct += 1
+    If Not(Mod(Ct, 1000)) Then Crt '.':
+  End
+Repeat
+
+CloseSeq OFL
+Crt
+Crt 'Export completed'
+
+STOP

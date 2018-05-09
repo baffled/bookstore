@@ -1,0 +1,33 @@
+!SCRIPT MAKETABLE %f %i
+ 
+$INCLUDE books.tables DEFAULT
+* ---------------------------------------------------------------------------
+*  @@Name        : U2_SALESTAX
+*  @@Description : Table Definition for U2_SALESTAX
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO{}
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Version Stamp
+!V!
+* ---------------------------------------------------------------------------
+BEGIN TABLE U2_SALESTAX
+TYPE 18
+MODULO 503
+SEPARATION 2
+   FIELD ID FNO 0 COLHEAD \Id\ LEN 10 JUST L
+   FIELD SHORT_DESCRIPTION FNO 1 COLHEAD \Short_description\ LEN 10 JUST L
+   FIELD RATE FNO 2 COLHEAD \Rate\ LEN 10 JUST R
+   PHRASE ALL_FIELDS \ID SHORT_DESCRIPTION RATE\
+   PHRASE DATA_FIELDS \ID SHORT_DESCRIPTION RATE\
+ENDDEFN

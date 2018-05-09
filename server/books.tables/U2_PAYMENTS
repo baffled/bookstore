@@ -1,0 +1,40 @@
+!SCRIPT MAKETABLE %f %i
+* ---------------------------------------------------------------------------
+*  @@Name        : U2_PAYMENTS
+*  @@Description : Table Definition for U2_PAYMENTS
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO{}
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Version Stamp
+!V!
+* ---------------------------------------------------------------------------
+$INCLUDE books.tables DEFAULT
+BEGIN TABLE U2_PAYMENTS
+TYPE 18
+MODULO 503
+SEPARATION 2
+   FIELD ID          FNO 0 COLHEAD \Id\ LEN 10 JUST L
+   FIELD PAY_DATE    FNO 1 COLHEAD \Pay_date\ CONV \D4/\ LEN 12 JUST R
+   FIELD CLIENT_ID   FNO 2 COLHEAD \Client_id\ LEN 10 JUST L
+   FIELD AMOUNT      FNO 3 COLHEAD \Amount\ MONEY LEN 8 JUST R
+   FIELD AMOUNT_INTL FNO 3 COLHEAD \Amount_intl\ CONV \MD2,[,'.',',',]\ LEN 10 JUST R
+   
+   FIELD CLIENT_FORENAME EXPR \TRANS(U2_CLIENTS,CLIENT_ID,FORENAME,"X")\ COLHEAD \Client_forename\ LEN 20 JUST L
+   FIELD CLIENT_SURNAME  EXPR \TRANS(U2_CLIENTS,CLIENT_ID,SURNAME,"X")\ COLHEAD \Client_surname\ LEN 20 JUST L
+
+   PHRASE @BROWSE \@ID PAY_DATE CLIENT_SURNAME\
+   PHRASE DATA_FIELDS \ID PAY_DATE CLIENT_ID AMOUNT\
+   PHRASE ALL_FIELDS \ID PAY_DATE CLIENT_ID AMOUNT CLIENT_FORENAME CLIENT_SURNAME\
+   PHRASE @ \PAY_DATE CLIENT_SURNAME\
+ENDDEFN

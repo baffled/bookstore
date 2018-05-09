@@ -1,0 +1,289 @@
+PROGRAM DO
+*--------------------------------------------------------------------------
+*  Name        : DO
+*  Description : Process source into platform dependent code
+*  Author      : Brian Leach
+*  Project     : UTILS
+*--------------------------------------------------------------------------
+*  Notes
+*  -----
+*
+*  This acts as a front end to using the PC/PAPC  and work files sets.
+*--------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*
+*  Date        Who  Version     Description
+*  ----        ---  -------     -----------
+*--------------------------------------------------------------------------
+*  Version Stamp
+*  -------------
+!V!
+*--------------------------------------------------------------------------
+$OPTIONS PICK
+EQU True            To 1
+EQU False           To 0
+EQU TAB             To Char(9)
+EQU LF              To Char(10)
+EQU FF              To Char(12)
+EQU CR              To Char(13)
+EQU ESC             To Char(27)
+EQU ZERO            To Char(0)  
+EQU FM              To Char(254)
+EQU VM              To Char(253)
+EQU SVM             To Char(252)
+EQU CRLF            To CHAR(13):CHAR(10)
+EQU BIG             To 999
+EQU HUGE            To 99999999
+Prompt ""
+EQU VERSION To VerData<1>
+EQU VERBETA To VerData<2>
+EQU VERDATE To VerData<3>
+EQU VERPROD To VerData<4>
+EQU VERTM   To VerData<5>
+EQU VERCOPY To VerData<6>
+EQU VERCO   To VerData<7>
+EQU VERDESC To VerData<8>
+EQU VERCAT  To VerData<9>
+EQU VERMOD  To VerData<10>
+EQU VERMVER To VerData<11>
+EQU VERHIST To VerData<12>
+EQU VERSTAMP To "!V!"
+EQU VERKEYS To 'Version/VerBeta/VerDate/VerProd/VerTM/VerCopy/VerCo/VerDesc/CatName/VerModule/VerModVer/VerHist/'
+EQU VERNAMES To 'Version Number/Beta Release Number/Product Name/Module Name/Module Version/Legal Trademark/Company/Copyright/Description/History'
+EQU VERKEYCOUNT To 12
+EQU VERMAXKEYLEN To 20
+EQU K.VERSION To 1
+EQU K.VERBETA To 2
+EQU K.VERDATE To 3
+EQU K.VERPROD To 4
+EQU K.VERTM   To 5
+EQU K.VERCOPY To 6
+EQU K.VERCO   To 7
+EQU K.VERDESC To 8
+EQU K.VERCAT  To 9
+EQU K.VERMOD  To 10
+EQU K.VERMVER To 11
+EQU K.VERHIST To 12
+NeedBind = False
+NeedCompile = False
+Converting = False
+NeedRemote = False
+IsPara = False
+IsTest = False
+PCOpts = ''
+NoCompile = False
+HasStudio = False
+Seek(Arg., 1)
+Get(Arg.) FN Else
+Crt "File : ": ; Input FN
+If FN = "" Then STOP
+End
+Get(Arg.) ID Else
+Crt "Item : ": ; Input ID
+If ID = "" Then STOP
+End
+Open FN To FL Else
+Crt "Cannot open ":FN
+STOP
+End
+Read Rec From FL, ID Else
+Rec = ''
+End
+Open 'VOC' to VOC Then
+Read Temp From VOC,'MVSTUDIO_VERSION' Then
+HasStudio = @TRUE
+End
+End
+IsScript = @False
+BaseFile = FN[".",1,DCount(FN,".")-1]
+Ext = FN[".",DCount(FN,"."),1]
+Begin Case
+Case Ext = "source"
+WorkFile = BaseFile:".bp"
+Converting = True
+Case Ext = "inc"
+WorkFile = BaseFile:".bp"
+Converting = True
+NoCompile = True
+Case Ext = "work"
+WorkFile = BaseFile:".test"
+Converting = True
+Case Ext = "pasrc"
+WorkFile = BaseFile:".pa"
+Converting = True
+IsPara = True
+Case FN = 'TEST_SCRIPTS'
+IsTest = True
+Case FN[3] = "SBP"              ; * cortex
+Converting = True
+WorkFile = "BP"
+Case 1
+Line = TrimF(Rec<1>)
+Begin Case
+Case UpCase(Line[1,7]) = '!SCRIPT'
+IsScript = @True
+Cmd = Line[" ", 2, Len(Line)]
+Case Count(Rec, "ENDDEFN") And HasStudio
+IsScript = @True
+Cmd = "SXADL %f %i"
+Case UpCase(Line) = "SETUP"
+IsScript = @True
+Cmd = "MAKEINSTALL ":ID:" ":ID:".mvi"
+End Case
+End Case
+Begin Case
+Case Converting
+GoSub DoConvert
+Case IsScript
+GoSub DoScript
+Case IsTest
+GoSub DoTest
+Case 1
+GoSub DoCompile
+End Case
+RETURN
+*---------------------------------------------------------------------------
+* DoCompile
+*---------------------------------------------------------------------------
+DoCompile:
+Open FN:'.O' To OBJFL Then
+Delete OBJFL, ID
+End
+ExLine = "BASIC ":FN:" ":ID
+Execute ExLine                    
+* Re-open in case BASIC created it
+* Open FN:'.O' To OBJFL Then
+*   ReadV Dummy From OBJFL, ID, 0 Then
+*      OFN = FN
+*      GoSub DoCompile
+*   End
+* End
+Return
+*---------------------------------------------------------------------------
+* DoConvert
+*---------------------------------------------------------------------------
+DoConvert:
+* Now assume the platform is UNIVERSE unless otherwise stated
+Get(Arg.) Platform Else
+Platform = "UNIVERSE"
+End
+Begin Case
+Case Platform = "UNIVERSE"
+NeedCompile = True
+NeedRemote = True
+Case Platform = "JBASE"
+WorkFile = WorkFile:",jbase"
+Case Platform = "UNIDATA"
+WorkFile = WorkFile:",unidata"
+Case Platform = "D3"
+WorkFile = WorkFile:",d3"
+Case Platform = "MVBASE"
+WorkFile = WorkFile:",mvbase"
+Case Platform = "QM"
+WorkFile = WorkFile:",qm"
+Case Platform = "MVON"
+WorkFile = WorkFile:",mvon"
+Case Platform = "CORTEX"
+WorkFile = "BP"
+Platform = "UNIVERSE"
+PCOpts<-1> = "/CORTEX"
+End Case
+Open WorkFile TO OFL Then
+OFN = WorkFile
+End Else
+Crt "Cannot find a work or bp file for ":Platform
+STOP
+End
+Loop
+Get(Arg.) Option Else Option = ''
+Until Option = '' Do
+PCOpts<-1> = "/":Option
+Repeat
+If IsPara Then
+! Run the precompiler first...
+ExLine = ""
+ExLine = "PAPC ":FN:" ":ID:" /TO ":WorkFile
+ExLine := " /":UpCase(Platform)
+Execute ExLine
+If NeedRemote Then
+ExLine = "CREATE.REMOTES ":WorkFile:" ":ID
+Execute ExLine
+End
+End Else
+! Run the precompiler first...
+ExLine = ""
+ExLine = "PC ":FN:" ":ID:" /TO ":WorkFile
+ExLine := " /":UpCase(Platform)
+ExLine := ' ':Change(PCOpts,@FM," ")
+Execute ExLine
+! and compile
+If NeedCompile And Not(NoCompile) Then
+Execute "BASIC ":OFN:" ":ID
+GoSub DoCatalog
+End
+End
+Return
+*---------------------------------------------------------------------------
+* DoCatalog
+*---------------------------------------------------------------------------
+DoCatalog:
+GoSub SetupVerbCatalog
+VerRec = Rec
+GoSub VerGet
+Begin Case
+Case VERCAT[1,1] = '*'
+Execute "MVS.CATALOG ":OFN:" ":VERCAT:" ":ID:" FORCE"
+Case 1
+Execute "MVS.CATALOG ":OFN:" ":ID:" LOCAL"
+End Case
+Return
+*---------------------------------------------------------------------------
+* DoScript
+*---------------------------------------------------------------------------
+DoScript:
+If Count(Cmd,'%') Then
+Cmd = Change(Cmd,'%f', FN)
+Cmd = Change(Cmd, '%i', ID)
+End Else
+Cmd = Cmd :' ':FN:' ':ID
+End
+Execute Cmd
+Return
+*---------------------------------------------------------------------------
+* DoTest
+*---------------------------------------------------------------------------
+DoTest:
+Cmd = 'TSC ':ID
+Execute Cmd
+Return
+* ------------------------------------------------------------------------
+* SetupVerbCatalog
+* ------------------------------------------------------------------------
+SetupVerbCatalog:
+Read Temp From VOC, "MVS.CATALOG" Else
+Write "Q":@fm:"uv":@fm:"VOC" On VOC, "MVS.UVVOC"
+Open "MVS.UVVOC" To F.UVVOC Else
+ErrText<-1> = "Cannot open VOC of UV Account"
+Return
+End
+Read CRec From F.UVVOC, "CATALOG" Else
+CRec = 'V' : @FM :'CATALOG':@FM:'I':@FM:'BDGZ':@FM:'catalog':@FM:'INFORMATION.FORMAT'
+End
+Write CRec On VOC, "MVS.CATALOG"
+End
+Return
+*---------------------------------------------------------------------------
+* Bound routines
+*---------------------------------------------------------------------------
+VerGet:
+VerData = ''
+For VerCount = 1 To VERKEYCOUNT
+VerKey = Field(VERKEYS,"/",VerCount,1):"="
+VerIx = Index(VerRec,VerKey,1)
+If VerIx Then
+VerVal = Field(Field(VerRec[VerIx,99999],'=',2,1),';',1,1)
+VerData<VerCount> = VerVal
+End
+Next VerCount
+Return

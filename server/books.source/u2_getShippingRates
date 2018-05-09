@@ -1,0 +1,68 @@
+$IFDEF UNIDATA
+$BASICTYPE "P"
+$ENDIF
+       SUBROUTINE u2_getShippingRates(InData, ShippingRateList, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_getShippingRatees
+*  @@Description : Retrieve the stored shipping rates
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO{
+*   This gets a lit of the standard shipping rates to cache.
+*  }
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$IFDEF UNIVERSE
+$OPTIONS PICK
+$ENDIF
+$INCLUDE books.source u2_common.h
+
+$INCLUDE books.inc U2_SHIPPING.h
+
+       EQU SHIPLIST.ID To 1
+       EQU SHIPLIST.DESCRIPTION TO 2
+       EQU SHIPLIST.COST TO 3
+
+       EQU IN.INTL To 1
+
+       Intl = InData<IN.INTL>
+
+       ShippingRateList = ''
+       Select F.SHIPPING
+       Done = @False
+       Loop
+          ReadNext Id Else Done = @True
+       Until Done Do
+          Read ShippingRec From F.SHIPPING, Id Then
+             Locate Id In ShippingRateList<SHIPLIST.ID> By "AL" Setting Pos Else
+                Ins Id Before ShippingRateList<SHIPLIST.ID,Pos>
+                Ins ShippingRec<U2_SHIPPING.SHORT_DESCRIPTION> Before ShippingRateList<SHIPLIST.DESCRIPTION,Pos>
+                If Intl Then
+                   Ins OConv(ShippingRec<U2_SHIPPING.COST>,"MD2,[,'.',',',]") Before ShippingRateList<SHIPLIST.COST,Pos>
+                End Else
+                   Ins OConv(ShippingRec<U2_SHIPPING.COST>,"MD2") Before ShippingRateList<SHIPLIST.COST,Pos>
+                End
+             End
+          End
+       Repeat
+
+       RETURN
+ 
+

@@ -1,0 +1,12 @@
+PA
+ENTER U2_CLIENTS _
+HEADING "Client Details" _
+@(2,2) "Customer Id " @(15,2) FIELD ID SEQUENTIAL _
+@(2,3) "Surname " @(15,3) FIELD SURNAME _
+@(2,4) "Forename" @(15,4) FIELD FORENAME _
+@(2,5) "Address" @(15,5,4) FIELD ADDRESS MEMO _
+@(2,12) "Country" @(15,12) FIELD COUNTRY _
+@(2,13) "Territory" @(15,13) FIELD TERRITORY_ID _
+@(2,14) "Joined" @(15,14) FIELD JOIN_DATE _
+@(2,16) "Status" @(15,16) FIELD ACCOUNT_STATUS _
+

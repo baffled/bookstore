@@ -1,0 +1,18 @@
+PROGRAM testReadJSON
+
+FileId = 0
+Call stdOpen("U2_BOOKS", FileId, ErrText)
+If ErrText <> '' Then
+  Crt ErrText
+STOP
+End
+ 
+Call stdReadJSON(FileId, 10, Rec, IsNew, "", ErrText)
+If ErrText <> '' Then
+  Crt ErrText
+End Else
+  Crt Rec
+End
+
+STOP
+

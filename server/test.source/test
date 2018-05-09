@@ -1,0 +1,27 @@
+PROGRAM
+Open 'uvcase_repository' TO F.CASE Else
+   STOP
+End
+Open 'conv.source' To F.SCRIPT Else
+   STOP
+End
+
+
+Read ToolRec From F.CASE, '_ABRConfigurator' Else
+   ToolRec = ''
+End
+
+Read CaseIndex From F.CASE, '_VERSION000000001' Else
+   CaseIndex = ''
+End
+
+ToolName = "ABRConfigurator"
+
+ ToolType = ToolRec<1>
+       ErrText = ''
+       Warnings = ''
+
+       Call sxcase2(ToolType, ToolName, ToolRec, F.CASE, F.SCRIPT, CaseIndex, Warnings, ErrText)
+
+RETURN
+

@@ -1,0 +1,17 @@
+PROGRAM
+
+Crt 'Enter search text ' :
+Input SearchText
+If SearchText = '' Then STOP
+
+BookList = ''
+ErrText = ''
+
+Call u2_searchBooksXML( SearchText, BookList, ErrText)
+
+Crt 'ErrText=':ErrText
+Crt '[BookList]'
+Crt BookList
+
+STOP
+

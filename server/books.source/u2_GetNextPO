@@ -1,0 +1,45 @@
+$IFDEF UNIDATA
+$BASICTYPE "P"
+$ENDIF
+SUBROUTINE u2_GetNextPO(Counter)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_GetNextPO
+*  @@Description : Get the next purchase order counter
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log  Added autodoc comments.
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$IFDEF UNIVERSE
+$OPTIONS PICK
+$ENDIF
+
+$INCLUDE u2_common.h
+
+ReadU Rec From F.PARAMS,"NEXT.PO" Else
+  Rec = 'X':@FM:0
+End
+
+Rec<2> = Rec<2> + 1
+Counter = Rec<2>
+Write Rec On F.PARAMS,"NEXT.PO"
+
+RETURN
+

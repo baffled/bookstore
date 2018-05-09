@@ -1,0 +1,12 @@
+PROGRAM
+
+Crt 'Sales order ':
+Input OrderId
+If OrderId = '' Then STOP
+
+
+Call u2_showSalesOrder( OrderId, OrderText, ErrText)
+Crt OrderText
+
+STOP
+

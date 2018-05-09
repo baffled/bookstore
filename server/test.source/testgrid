@@ -1,0 +1,19 @@
+SUBROUTINE testgrid(Action,Rec)
+
+Open 'mvstudio_local' to FL else
+   RETURN
+End
+
+Begin Case
+Case Action = 1
+   Read Rec From FL,  "TEST" Else
+      Rec = ''
+   End
+Case Action = 2
+   Rec = Change(Rec,'Col','Changed')
+   Write Rec On FL, "TEST_NEW"
+
+End Case
+
+RETURN
+

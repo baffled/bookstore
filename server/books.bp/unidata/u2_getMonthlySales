@@ -1,0 +1,150 @@
+SUBROUTINE u2_getMonthlySales(InData, OutData, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : bookSales
+*  @@Description : Return sales charts for book sales
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$INCLUDE studio.inc sxvml.h
+$INCLUDE books.bp u2_common.h
+$INCLUDE books.inc U2_BOOKS.h
+$INCLUDE books.inc U2_ORDERS.h
+DIM SERIES(10)
+MAT SERIES = ''
+CALL u2_init
+Action = InData<1>
+GOSUB Main
+BEGIN CASE
+CASE Action = 1
+* Now return encoded
+ChartInfo = \{"chartType":"bar"\
+ChartInfo<2> = \"cols":["Month"\
+ChartInfo<3> = \"colTypes":["string"\
+ChartInfo<4> = \"series":[[\:\"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"\:\]\
+FOR I = 1 TO NoYears
+ChartInfo<2> := ',':Years<I>
+ChartInfo<3> := ',"number"'
+ChartInfo<4> := ',[': CONVERT(@FM,',',SERIES(I)) : ']'
+NEXT
+ChartInfo<2> := ']'
+ChartInfo<3> := ']'
+ChartInfo<4> := ']}'
+CASE Action = 2
+ChartInfo = \{"chartType":"pie"\
+ChartInfo<2> = \"cols":["Genre","Qty"]\
+ChartInfo<3> = \"colTypes":["string","number"]\
+ChartInfo<4> = \"series":[["\:CHANGE(Genres,@FM,\","\):\"]\
+ChartInfo<4> := \,[\:CHANGE(GenreTotals,@FM,","):\]]}\
+END CASE
+OutData = CONVERT(@FM,",",ChartInfo)
+RETURN
+*---------------------------------------------------------------------------
+* Main
+*---------------------------------------------------------------------------
+Main:
+NoYears = 0
+LastYear = ''
+Depts = ''
+BookTotals = ''
+Genres = ''
+GenreTotals = ''
+DeptTotals = ''
+Years = ''
+BookDepts = ''
+BookGenres = ''
+GOSUB GetGenres
+GOSUB Build
+RETURN
+*---------------------------------------------------------------------------
+* AddOrder
+*---------------------------------------------------------------------------
+AddOrder:
+BEGIN CASE
+CASE Action = 1 ;* months
+OrderDate = Id["*",1,1]
+Month = OCONV(OrderDate, "DM") "R%2"
+Year = OCONV(OrderDate,"DY4")
+NoMonths += 1
+StoreDate= Year:Month
+TotalQty = SUM(OrderRec<U2.ORDERS.QTY>)
+IF Year <> LastYear THEN
+NoYears += 1
+Years<NoYears> = Year
+LastYear = Year
+FOR J = 1 TO 12
+SERIES(NoYears)<J> = 0
+NEXT
+END
+SERIES(NoYears)<Month> += TotalQty
+CASE 1
+* Now go through each one working out the dept and genre
+NoTitles = DCOUNT(OrderRec<U2.ORDERS.BOOK.ID>,@VM)
+FOR I = 1 TO NoTitles
+BookId = OrderRec<U2.ORDERS.BOOK.ID, I>
+Genre = BookGenres<BookId>
+Dept = BookDepts<BookId>
+Qty = OrderRec<U2.ORDERS.QTY, I>
+LOCATE Genre IN Genres BY "AL" SETTING Pos ELSE
+INS Genre BEFORE Genres<Pos>
+INS 0 BEFORE GenreTotals<Pos>
+END
+IF Dept = "ADULT" THEN
+DeptTotals<1,1> += Qty
+GenreTotals<Pos> += Qty
+END ELSE
+DeptTotals<1,2> += Qty
+GenreTotals<Pos> += Qty
+END
+NEXT
+END CASE
+RETURN
+*---------------------------------------------------------------------------
+* Build
+*---------------------------------------------------------------------------
+Build:  
+ExLine = 'SSELECT U2_ORDERS BY ORDER_DATE'
+EXECUTE ExLine RTNLIST SLIST
+Fin = @FALSE
+LOOP
+READNEXT Id FROM SLIST ELSE Fin = @TRUE
+UNTIL Fin DO
+READ OrderRec FROM F.ORDERS, Id THEN
+GOSUB AddOrder
+END
+REPEAT
+RETURN
+*---------------------------------------------------------------------------
+* GetGenres
+*---------------------------------------------------------------------------
+GetGenres: 
+SELECT F.BOOKS
+Fin = @FALSE
+LOOP
+READNEXT Id ELSE Fin = @TRUE
+UNTIL Fin DO
+READ BookRec FROM F.BOOKS, Id THEN
+BookGenres<Id> = BookRec<U2.BOOKS.GENRE>
+BookDepts<Id> = BookRec<U2.BOOKS.DEPT>
+END
+REPEAT
+RETURN
+

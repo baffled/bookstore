@@ -1,0 +1,157 @@
+# @@Name        : u2_recommender_v3
+# @@Description : Simple recommendations (version 3)
+# @@Version     : 1.0
+# -----------------------------------------------------------------------------
+# @@Info{
+#   This rewrites the u2_recommander_v2 into a Python equivalent.
+#   As this uses native Python types, the result is more maintainable and
+#   extensible.
+#
+#   The recommendations are based on other clients' purchases (collaborative
+#   filtering). For each order we examine the list of books, add those to the
+#   set for that same client so we can pair them across the entire purchase
+#   history for the client.
+#
+#   To preserve the arrays, this persists as a simple socket listener.
+#   See the books.bp u2_recommender_v3 subroutine for the driver information.
+# -----------------------------------------------------------------------------
+import u2py
+import socket
+import sys
+import json
+import bisect
+
+class u2_recommender:
+    def __init__(self):
+        self.U2_ORDERS = u2py.File("U2_ORDERS")
+        self.U2_BOOKS = u2py.File("U2_BOOKS")
+        self.clientBooks = {}
+        self.bookClients = {}
+        self.pairs       = {}
+        self.debugFile   = open('debug.log','a')
+    
+    def build(self, limit):
+        self.log('starting build')
+        slist = u2py.List(0, self.U2_ORDERS)
+        ct = 0
+        for orderId in slist:
+            ct = ct + 1
+            if ct > limit and limit > 0:
+                break
+            orderDA = self.U2_ORDERS.read(orderId)
+            self.log('building order ' + str(orderId))
+            self.buildOrderToModel(orderDA)
+        return ct    
+    
+    def buildOrder(self, orderId):
+        orderDA = self.U2_ORDERS.read(orderId)
+        self.buildOrderToModel(orderDA)
+        return 1
+        
+    def buildOrderToModel(self, orderDA):            
+        order = orderDA.to_list()
+        clientId = order[0]
+        if len(order) < 10: return
+        self.log('adding ' + str(len(order[9])) + ' books')
+        for bookId in order[9]:
+           if clientId not in self.clientBooks: 
+              self.clientBooks[clientId] = [bookId]
+           else:
+              pos = bisect.bisect(self.clientBooks[clientId], bookId)
+              if not (pos > 0 and self.clientBooks[clientId][pos-1] == bookId):
+                 self.clientBooks[clientId].insert(pos,bookId)
+           if bookId not in self.bookClients: 
+              self.bookClients[bookId] = [clientId]
+           else:
+              pos = bisect.bisect(self.bookClients[bookId], clientId)
+              if not (pos > 0 and self.bookClients[bookId][pos-1] == clientId):
+                 self.bookClients[bookId].insert(pos,clientId)
+           
+    def log(self, text):
+        return
+        try:
+           self.debugFile.write(text + '\n')
+        except:
+           self.debugFile.close()
+           
+    def recommend(self, myBookId,myClientId, limit, noWeight):
+        # get details of my book
+        bookDA = self.U2_BOOKS.read(myBookId)
+        myAuthorId = str(bookDA.extract(2))
+        myGenre    = str(bookDA.extract(5))
+        otherBooks = {}
+        self.log('Getting recommendations for ' + myBookId + ' client ' + myClientId)
+        # get all clients who have purchased this book
+        for clientId in self.bookClients[myBookId]:
+            bookArray = self.clientBooks[clientId]
+            # and all books purchased by those clients            
+            for bookId in bookArray:
+               if bookId != myBookId:
+                   pos = 0
+                   if myClientId != '':
+                      pos = bisect.bisect(self.clientBooks[myClientId],bookId)
+                   if not(pos > 0 and self.clientBooks[myClientId][pos-1] == bookId):                        
+                      if bookId not in otherBooks: otherBooks[bookId] = 0                   
+                      otherBooks[bookId] = otherBooks[bookId] + 1
+        # apply weightings on the result (author and genre)
+        if not noWeight in ['yes','true','1']:
+           for bookId in otherBooks:
+               try:
+                   bookDA = self.U2_BOOKS.read(bookId)
+                   thisAuthor = str(bookDA.extract(2))
+                   thisGenre = str(bookDA.extract(5))
+                   if thisAuthor == myAuthorId:
+                       otherBooks[bookId] = otherBooks[bookId] * 3
+                   elif thisGenre == myGenre:
+                       otherBooks[bookId] = otherBooks[bookId] * 2
+               except:
+                   otherBooks[bookId] = 0
+        # sort into reverse order of weighted values
+        sortedBooks = []
+        for key, value in sorted(otherBooks.items(), key=lambda item: (item[1], item[0]), reverse=True):            
+            sortedBooks.append({'titleId': key,'counter' :value})
+            if len(sortedBooks) > 10: break
+        return json.dumps(sortedBooks)
+    
+    def processRequest(self, request):
+        try:
+            action = request['action']
+        except:
+            action = 'unknown'
+           
+#        print("got action %s", action) 
+        if action == 'build': 
+            return self.build(0)
+        elif action == 'add': 
+            return self.buildOrder(request['orderId'])
+        elif action == 'recommend':
+            return self.recommend(request['titleId'],request['clientId'],0, request['noWeight'])
+        elif action == 'close':
+            self.debugFile.close()
+            exit()
+        else:
+            return 'Unknown action'
+                            
+
+def createRecommender():
+   return u2_recommender()
+
+if __name__ == "__main__":
+    HOST,PORT = "localhost",10009    
+    a = u2_recommender()
+    print("Starting socket server on",HOST,PORT)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.bind((HOST,PORT))
+    sock.listen(1)
+    while True:
+        connection,client_addr = sock.accept()
+        data = connection.recv(1024)
+        if data: 
+            request = json.loads(data.decode('iso-8859-1'))
+            response = a.processRequest(request)
+            connection.sendall(bytes(response,'iso-8859-1'))
+            connection.close()
+            
+# print(a.recommend("208","",0))
+
+           

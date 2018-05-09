@@ -1,0 +1,76 @@
+SETUP
+[Header]
+Banner=Bookstore Demonstration
+Product=BOOKSTORE
+Version=1.0.0
+Author=Brian Leach
+Company=Brian Leach Consulting Limited
+CompanyURL=www.brianleach.co.uk
+Platforms=UNIVERSE
+Licence=LICENCE_MIT
+Copyright=Copyright 2018 Brian Leach Consulting Limited
+[Groups]
+Default=Mandatory,,Main
+[Main]
+CreateFile books.bp
+CreateFile books.inc
+CreateFile books.pysrc
+CreateFile books.scripts
+CreateFile books.source
+CreateFile books.tables
+CreateFile books.pa
+CreateFile U2_AUTHORS
+Add DICT U2_AUTHORS *
+Add U2_AUTHORS *
+CreateFile U2_BOOKS
+Add DICT U2_BOOKS *
+Add U2_BOOKS *
+CreateFile U2_CLIENT_ORDERS
+Add DICT U2_CLIENT_ORDERS *
+Add U2_CLIENT_ORDERS *
+CreateFile U2_CLIENTS
+Add DICT U2_CLIENTS *
+Add U2_CLIENTS *
+CreateFile U2_ORDERS
+Add DICT U2_ORDERS *
+Add U2_ORDERS *
+CreateFile U2_PARAMS
+Add DICT U2_PARAMS *
+Add U2_PARAMS *
+CreateFile U2_PAYMENTS
+Add DICT U2_PAYMENTS *
+Add U2_PAYMENTS *
+CreateFile U2_PERSONNEL
+Add DICT U2_PERSONNEL *
+Add U2_PERSONNEL *
+CreateFile U2_PROFILES
+Add DICT U2_PROFILES *
+Add U2_PROFILES *
+CreateFile U2_PROMOTIONS
+Add DICT U2_PROMOTIONS *
+Add U2_PROMOTIONS *
+CreateFile U2_PURCHASES
+Add DICT U2_PURCHASES *
+Add U2_PURCHASES *
+CreateFile U2_SALESTAX
+Add DICT U2_SALESTAX *
+Add U2_SALESTAX *
+CreateFile U2_SHIPPING
+Add DICT U2_SHIPPING *
+Add U2_SHIPPING *
+CreateFile U2_SUPPLIERS
+Add DICT U2_SUPPLIERS *
+Add U2_SUPPLIERS *
+CreateFile U2_TARGETS
+Add DICT U2_TARGETS *
+Add U2_TARGETS *
+CreateFile U2_IMAGES
+Add DICT U2_IMAGES *
+AddBinary U2_IMAGES *
+Add books.source *
+Add books.bp *
+Add books.inc *
+Add books.pysrc *
+Compile books.bp *
+Catalog books.bp *
+Add books.pa *

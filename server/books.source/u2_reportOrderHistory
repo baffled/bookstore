@@ -1,0 +1,82 @@
+$IFDEF UNIDATA
+$BASICTYPE "P"
+$ENDIF
+       SUBROUTINE u2_reportOrderHistory(SearchData, Text, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_reportOrderHistory
+*  @@Description : Show the order history for a book
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO{
+*   This takes advantage of the built in enquiry language to capture a
+*   listing of books ordered.
+*
+*   This goes into the detail lines for each order (see BY.EXP below) to 
+*   produce a normalized view of the orders and then filters on the
+*   specific title (see WHEN).
+*  }
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$IFDEF UNIVERSE
+$OPTIONS PICK
+$ENDIF
+$INCLUDE books.source u2_common.h
+
+$INCLUDE books.inc U2_BOOKS.h
+
+BookId = SearchData<1>
+Intl   = SearchData<2>
+
+Perform "TERM 132,60" ;* set the report page size
+
+ReadV BookTitle From F.BOOKS, BookId, U2_BOOKS.TITLE Else
+  BookTitle = "Unknown"
+End
+
+Query = \SORT U2_ORDERS BY-EXP BOOK_ID BY ORDER_DATE \
+Query := \ORDER_DATE CLIENT_ID CLIENT_NAME \
+$IFDEF UNIVERSE
+Query := \ BREAK.ON EVAL "OCONV(ORDER_DATE,'DMY')" AS "Month" TOTAL QTY\
+$ELSE
+Query : \ TOTAL QTY \
+$ENDIF
+Query := \ WHEN BOOK_ID = "\ : BookId:\"\
+Query := \ HEADING "Order History for \:BookId:\ \:BookTitle:\ on 'D'"\
+Query := \ FOOTING "'C' Page 'P'\:Char(12):\"\
+Query := \ ID.SUP\
+
+$IFDEF UNIVERSE
+Execute Query CAPTURING Text
+* strip off the preamble
+Ix = Index(Text, 'Order', 1)
+Text = Text[Ix, Len(Text)]
+
+* @(-1) is a clear screen sequence. This should not be present but we will
+* clean it anyway
+If @(-1) <> "" Then
+  Text = Change(Text,@(-1),"")
+End
+$ELSE
+Execute Query CAPTURING Text
+$ENDIF
+
+RETURN
+
+

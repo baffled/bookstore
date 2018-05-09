@@ -1,0 +1,50 @@
+SUBROUTINE u2_getSalesTaxes(SalesTaxList, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_getSalesTaxes
+*  @@Description : Retrieve the stored sales taxes
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO{
+*   This gets a lit of the standard sales taxes to cache.
+*  }
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$OPTIONS PICK
+$INCLUDE books.source u2_common.h
+$INCLUDE books.inc U2_SALESTAX.h
+EQU TAXLIST.ID To 1
+EQU TAXLIST.DESCRIPTION TO 2
+EQU TAXLIST.RATE TO 3
+SalesTaxList = ''
+Select F.SALESTAX
+Done = @False
+Loop
+ReadNext Id Else Done = @True
+Until Done Do
+Read TaxRec From F.SALESTAX, Id Then
+Locate Id In SalesTaxList<TAXLIST.ID> By "AL" Setting Pos Else
+Ins Id Before SalesTaxList<TAXLIST.ID,Pos>
+Ins TaxRec<U2_SALESTAX.SHORT_DESCRIPTION> Before SalesTaxList<TAXLIST.DESCRIPTION,Pos>
+Ins TaxRec<U2_SALESTAX.RATE> Before SalesTaxList<TAXLIST.RATE,Pos>
+End
+End
+Repeat
+RETURN
+

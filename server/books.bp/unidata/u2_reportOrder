@@ -1,0 +1,142 @@
+$BASICTYPE "P"
+PROGRAM u2_reportOrder
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_reportOrder
+*  @@Description : Display order details
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$INCLUDE u2_common.h
+$INCLUDE books.inc U2_BOOKS.h
+$INCLUDE books.inc U2_ORDERS.h
+$INCLUDE books.inc U2_CLIENTS.h
+MAXDEPTH = 60
+Command = TRIM(SENTENCE())
+* Command is : u2_reportOrder {INTL|UK} {orderid|ALL} {customerId}
+Intl         = FIELD(Command, " ", 2, 1)
+OrderSearch  = FIELD(Command," ", 3 ,1)
+ClientSearch = FIELD(Command," ", 4 ,1)
+Intl = (Intl = "INTL")
+IF Intl THEN
+PriceConv = "MD2,[,'.',',',]"
+END ELSE
+PriceConv = "MD2"
+END
+BEGIN CASE
+CASE OrderSearch <> "ALL"
+Query = 'SELECT U2_ORDERS "': OrderSearch:'"'
+CASE 1
+Query = 'SELECT U2_ORDERS WITH CLIENT_ID = "':ClientSearch:'"'
+END CASE
+CLEARSELECT ALL
+NeedThrow = @FALSE
+PERFORM Query
+Done = @FALSE
+LOOP
+READNEXT Id ELSE Done = @TRUE
+UNTIL Done DO
+GOSUB DoOrder
+REPEAT
+RETURN
+* --------------------------------------------------------------------------
+* DoOrder
+* --------------------------------------------------------------------------
+DoOrder: 
+READ OrderRec FROM F.ORDERS, Id ELSE
+OrderRec = ''
+RETURN
+END
+IF NeedThrow THEN PRINT CHAR(12):
+GOSUB PrintHeader
+OrderDate = FIELD(Id,"*",1,1)
+PRINT "Order Date : ": OCONV(OrderDate,"D4/")
+PRINT "Customer   : ": (OrderRec<U2.ORDERS.CLIENT.ID> "R%3") :' ' :
+READ ClientRec FROM F.CLIENTS,OrderRec<U2.ORDERS.CLIENT.ID> ELSE
+ClientRec = 'Unknown'
+END
+PRINT ClientRec<U2.CLIENTS.FORENAME>:' ':ClientRec<U2.CLIENTS.SURNAME>
+PRINT "Status     : ": OrderRec<U2.ORDERS.ORDER.STATUS>
+PRINT "Ship Type  : ": OrderRec<U2.ORDERS.SHIP.ID> : ' ':
+READV ShipTypeDesc FROM F.SHIPPING, OrderRec<U2.ORDERS.SHIP.ID>, 1 ELSE
+ShipTypeDesc = ''
+END
+PRINT ShipTypeDesc
+ShipCost = OrderRec<U2.ORDERS.SHIP.COST>
+PRINT "Ship Cost  : ": OCONV(ShipCost, PriceConv)
+PRINT
+NoLines = DCOUNT(OrderRec<U2.ORDERS.BOOK.ID>,@VM)
+Line = 10
+GOSUB PrintItemHeader
+OrderTotal = 0
+FOR I = 1 TO NoLines
+PLine = ''
+Line += 1
+IF Line > MAXDEPTH THEN
+PRINT CHAR(12):
+Line = 0
+GOSUB PrintHeader
+GOSUB PrintItemHeader
+END
+BookId = OrderRec<U2.ORDERS.BOOK.ID,I>
+READ BookRec FROM F.BOOKS, BookId ELSE
+BookRec = ''
+END
+PLine = (BookId "R#4")
+Price = OrderRec<U2.ORDERS.PRICE,I>
+Qty = OrderRec<U2.ORDERS.QTY,I>
+Taxrate = OrderRec<U2.ORDERS.TAX.RATE,I>
+GTotal = Price * Qty
+TTotal = GTotal * Taxrate / 100
+Total = GTotal + TTotal
+PLine := ' ' : (BookRec<U2.BOOKS.TITLE> "L#40")
+PLine := ' ' : (OCONV(Price, PriceConv) "R#7")
+PLine := ' ' : (Qty "R#3")
+PLine := ' ' : (Taxrate "R#5")
+PLine := ' ' : (OCONV(Total, PriceConv) "R#7")
+PRINT PLine
+OrderTotal += Total
+NEXT
+PRINT SPACE(64):"======="
+PRINT SPACE(64): (OCONV(OrderTotal, PriceConv) "R#7")
+PRINT SPACE(64):"======="
+PRINT ("ORDER TOTAL :" "L#64") : (OCONV(OrderTotal + ShipCost, PriceConv) "R#7")
+PRINT
+NeedThrow = @TRUE
+RETURN
+* --------------------------------------------------------------------------
+* Print Header
+* --------------------------------------------------------------------------
+PrintHeader: 
+PRINT "Order Details for order ":Id:"  printed on ":OCONV(DATE(),"D4/")
+PRINT STR("=",80)
+PRINT
+Line = 4
+RETURN
+* --------------------------------------------------------------------------
+* Print Item Header
+* --------------------------------------------------------------------------
+PrintItemHeader: 
+PRINT 'Code Title                                    Price   Qty   Tax   Total'
+PRINT '---- ---------------------------------------- ------- --- ----- -------'
+Line += 2
+RETURN
+

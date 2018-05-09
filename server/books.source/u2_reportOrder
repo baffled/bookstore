@@ -1,0 +1,167 @@
+$IFDEF UNIDATA
+$BASICTYPE "P"
+$ENDIF
+       PROGRAM u2_reportOrder
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_reportOrder
+*  @@Description : Display order details
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$IFDEF UNIVERSE
+$OPTIONS PICK
+$ENDIF
+$INCLUDE u2_common.h
+$INCLUDE books.inc U2_BOOKS.h
+$INCLUDE books.inc U2_ORDERS.h
+$INCLUDE books.inc U2_CLIENTS.h
+
+       MAXDEPTH = 60
+
+$IFDEF UNIVERSE
+       Command = Trim(@Sentence)
+$ELSE
+       Command = Trim(Sentence())
+$ENDIF
+
+* Command is : u2_reportOrder {INTL|UK} {orderid|ALL} {customerId}
+       Intl         = field(Command, " ", 2, 1)
+       OrderSearch  = field(Command," ", 3 ,1)
+       ClientSearch = field(Command," ", 4 ,1)
+
+       Intl = (Intl = "INTL")
+       If Intl Then
+          PriceConv = "MD2,[,'.',',',]"
+       End Else
+          PriceConv = "MD2"
+       End
+
+
+       Begin Case
+          Case OrderSearch <> "ALL"
+             Query = 'SELECT U2_ORDERS "': OrderSearch:'"'
+          Case 1
+             Query = 'SELECT U2_ORDERS WITH CLIENT_ID = "':ClientSearch:'"'
+       End Case
+
+       ClearSelect ALL
+       NeedThrow = @false
+       Perform Query
+       Done = @False
+       Loop
+          readNext Id Else Done = @True
+       Until Done Do
+          Gosub DoOrder
+       Repeat
+
+       RETURN
+
+* --------------------------------------------------------------------------
+* DoOrder
+* --------------------------------------------------------------------------
+DoOrder: 
+       Read OrderRec from F.ORDERS, Id Else
+          OrderRec = ''
+          Return
+       End
+
+       If NeedThrow Then Print Char(12):
+       GoSub PrintHeader
+       OrderDate = Field(Id,"*",1,1)
+       Print "Order Date : ": Oconv(OrderDate,"D4/")
+       Print "Customer   : ": (OrderRec<U2_ORDERS.CLIENT_ID> "R%3") :' ' :
+       Read ClientRec From F.CLIENTS,OrderRec<U2_ORDERS.CLIENT_ID> Else
+          ClientRec = 'Unknown'
+       End
+       Print ClientRec<U2_CLIENTS.FORENAME>:' ':ClientRec<U2_CLIENTS.SURNAME>
+       Print "Status     : ": OrderRec<U2_ORDERS.ORDER_STATUS>
+       Print "Ship Type  : ": OrderRec<U2_ORDERS.SHIP_ID> : ' ':
+       ReadV ShipTypeDesc From F.SHIPPING, OrderRec<U2_ORDERS.SHIP_ID>, 1 Else
+          ShipTypeDesc = ''
+       End
+       Print ShipTypeDesc
+       ShipCost = OrderRec<U2_ORDERS.SHIP_COST>
+       Print "Ship Cost  : ": OConv(ShipCost, PriceConv)
+       Print
+       NoLines = Dcount(OrderRec<U2_ORDERS.BOOK_ID>,@VM)
+       Line = 10
+       GoSub PrintItemHeader
+       OrderTotal = 0
+       For I = 1 To NoLines
+          PLine = ''
+          Line += 1
+          If Line > MAXDEPTH Then
+             Print Char(12):
+             Line = 0
+             GoSub PrintHeader
+             GoSub PrintItemHeader
+          End
+          BookId = OrderRec<U2_ORDERS.BOOK_ID,I>
+          Read BookRec From F.BOOKS, BookId Else
+             BookRec = ''
+          End
+          PLine = (BookId "R#4")
+          Price = OrderRec<U2_ORDERS.PRICE,I>
+          Qty = OrderRec<U2_ORDERS.QTY,I>
+          Taxrate = OrderRec<U2_ORDERS.TAX_RATE,I>
+
+          GTotal = Price * Qty
+          TTotal = GTotal * Taxrate / 100
+          Total = GTotal + TTotal
+
+          PLine := ' ' : (BookRec<U2_BOOKS.TITLE> "L#40")
+          PLine := ' ' : (OConv(Price, PriceConv) "R#7")
+          PLine := ' ' : (Qty "R#3")
+          PLine := ' ' : (Taxrate "R#5")
+          PLine := ' ' : (Oconv(Total, PriceConv) "R#7")
+                                                                
+          Print PLine
+          OrderTotal += Total
+       Next
+       Print Space(64):"======="
+       Print Space(64): (OConv(OrderTotal, PriceConv) "R#7")
+       Print Space(64):"======="
+       Print ("ORDER TOTAL :" "L#64") : (OConv(OrderTotal + ShipCost, PriceConv) "R#7")
+       Print
+       NeedThrow = @true
+       Return
+                                                             
+* --------------------------------------------------------------------------
+* Print Header
+* --------------------------------------------------------------------------
+PrintHeader: 
+       Print "Order Details for order ":Id:"  printed on ":Oconv(Date(),"D4/")
+
+       Print Str("=",80)
+       Print
+       Line = 4
+       Return
+
+* --------------------------------------------------------------------------
+* Print Item Header
+* --------------------------------------------------------------------------
+PrintItemHeader: 
+       Print 'Code Title                                    Price   Qty   Tax   Total'
+       Print '---- ---------------------------------------- ------- --- ----- -------'
+       Line += 2
+       Return
+

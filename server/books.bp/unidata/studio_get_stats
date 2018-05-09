@@ -1,0 +1,10 @@
+SUBROUTINE studio_get_stats(Stats,Values)
+* just mock up for now as different on Solaris
+RANDOMIZE
+CPU = RND(50)
+Mem = RND(70)
+Net = RND(30)
+Stats = 'CPU,Memory,Network'
+Values = CPU:@FM:Mem:@FM:Net
+RETURN
+

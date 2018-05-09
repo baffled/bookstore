@@ -1,0 +1,77 @@
+PROGRAM show_book_html
+* ---------------------------------------------------------------------------
+*  @@Name        : show_book_html
+*  @@Description : Return a book summary in html 
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log  
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------  
+$INCLUDE books.inc U2_BOOKS.h
+$INCLUDE books.inc U2_AUTHORS.h
+Open 'U2_BOOKS' To BOOKS Else
+Crt 'Cant open BOOKS'
+STOP
+End
+Open 'U2_AUTHORS' To AUTHORS Else
+Crt 'No AUthoirs!'
+STOP
+End
+Get(Arg.) BookId Else
+BookId = ''
+End
+Crt '<HTML>'
+If BookId <> '' then
+GoSub GetBook
+End
+Crt"</html>"
+STOP
+GetBook:
+Read BookRec From BOOKS, BookId Then
+GoSub ShowBook
+Return
+End Else
+ExLine = 'SSELECT U2_BOOKS WITH U_TITLE LIKE "...{UID}..." OR WITH ISBN = "{UID}"'
+ExLine := ' OR WITH U_AUTHOR_NAME LIKE "...{UID}..."'
+ExLine = Change(ExLine,"{UID}", UpCase(BookId))
+Execute ExLine, OUT. > OUT, SELECT. > SLIST
+Fin = @False
+Loop
+ReadNext BookId From SLIST Else Fin = @True
+Until Fin Do
+Read BookRec From BOOKS, BookId then
+GoSub ShowBook
+End
+Repeat
+End
+Return
+ShowBook:
+crt '<TABLE><tr><td>'
+Crt "Book Id : </td><td><a href='book:":BookId:"'>" : BookId:"</a></td>"
+Crt "<tr><td>Title   : </td><td>" : BookRec<U2_BOOKS.TITLE>: "</td></tr>"
+Read AuthorRec From AUTHORS, BookRec<U2_BOOKS.AUTHOR_ID> else
+Return
+end
+crt "<tr><td>Author  : </td><td><a href='author:":BookRec<U2_BOOKS.AUTHOR_ID>:"'>" : AuthorRec<U2_AUTHORS.FULLNAME>: "</a></td></tr>"
+crt "<tr><td>Sale Price : </td><td>" : oconv(BookRec<U2_BOOKS.SALE_PRICE>,'MR2'): "</td></tr>"
+crt "<tr><td>isbn       : </td><td>" : BookRec<U2_BOOKS.ISBN> :"</td></tr></Table>"
+ImagePath = "file://k:/demo/incubator/u2_res/images/":BookId:".jpg"
+Crt "<img src='" : ImagePath:"' />"
+return   

@@ -1,0 +1,57 @@
+$IFDEF UNIDATA
+$BASICTYPE "P"
+$ENDIF
+       SUBROUTINE u2_showSalesOrder(OrderId, OrderText, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_showSalesOrder
+*  @@Description : Show a Sales Order
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO{
+*   This takes advantage of the built in enquiry language to capture a
+*   listing of an order.
+*  }
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$IFDEF UNIVERSE
+$OPTIONS PICK
+$ENDIF
+$INCLUDE books.source u2_common.h
+
+$INCLUDE books.inc U2_BOOKS.h
+
+Query = \SORT U2_ORDERS '\:OrderId:\'\
+Query := \ORDER_DATE CLIENT_ID CLIENT_NAME ORDER_STATUS DESPATCH_DATE\
+Query := \ SHIP_COST BALANCE\
+Query := \ BOOK_ID BOOK_TITLE QTY PRICE TAX_CODE\
+Query := \ HEADING "'C' Details for Sales Order \:OrderId:\ on 'D'"\
+Query := \ FOOTING "'C' Page 'P'"\
+Query := \ ID.SUP\
+
+$IFDEF UNIVERSE
+Execute Query, OUT. > OrderText
+$ELSE
+Execute Query CAPTURING OrderText
+$ENDIF
+
+RETURN
+
+
+

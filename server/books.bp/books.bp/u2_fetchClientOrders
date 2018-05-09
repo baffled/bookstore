@@ -1,0 +1,37 @@
+SUBROUTINE u2_fetchClientOrders(ClientId, OrderList)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_fetchClientOrders
+*  @@Description : Get a list of orders for a given client
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO {
+*   This uses a direct index selection to return the list of order keys
+*   that have been indexed against a client.
+*  }
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$OPTIONS PICK
+$INCLUDE books.bp u2_common.h
+SLIST = ''
+SelectIndex "CLIENT_ID", ClientId From F.ORDERS To SLIST
+ReadList OrderList From SLIST Else
+OrderList = ''
+End
+RETURN

@@ -1,0 +1,35 @@
+!SCRIPT MAKETABLE %f %i
+$INCLUDE books.tables DEFAULT
+ 
+* ---------------------------------------------------------------------------
+*  @@Name        : U2_PUBLISHERS
+*  @@Description : Table Definition for U2_PUBLISHERS
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO{}
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Version Stamp
+!V!
+* ---------------------------------------------------------------------------
+BEGIN TABLE U2_PUBLISHERS
+TYPE 18
+MODULO 503
+SEPARATION 2
+   FIELD ID         FNO 0 COLHEAD \Id\ LEN 10 JUST L
+   FIELD FULLNAME   FNO 1 COLHEAD \Fullname\ LEN 40 JUST L
+   FIELD BOOK_IDS   FNO 2 COLHEAD \Book_ids\ LEN 10 JUST L MVED
+   PHRASE @BROWSE \@ID FULLNAME\
+   PHRASE @ \FULLNAME\
+   PHRASE ALL_FIELDS \ID FULLNAME BOOK_IDS\
+   PHRASE DATA_FIELDS \ID FULLNAME BOOK_IDS\
+ENDDEFN

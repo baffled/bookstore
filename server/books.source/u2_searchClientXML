@@ -1,0 +1,95 @@
+$IFDEF UNIDATA
+$BASICTYPE "P"
+$ENDIF
+SUBROUTINE u2_searchClientXML(SearchData, ClientList, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_searchClientXML
+*  @@Description : Construct an XML query to return client data
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$IFDEF UNIVERSE
+$OPTIONS PICK
+$ENDIF
+
+EQU SEARCH.ID     TO 1
+EQU SEARCH.SURNAME To 2
+EQU SEARCH.FORENAME   To 3
+
+Query = ''
+SearchId     = SearchData<SEARCH.ID>
+SearchSurname = SearchData<SEARCH.SURNAME>
+SearchForename  = SearchData<SEARCH.FORENAME>
+
+
+
+* Next step is to select the orders in the date range if specified
+Query = 'SORT U2_CLIENTS'
+
+WithClause = ''
+If SearchId <> '' Then
+   WithClause = ' WITH ID = "':SearchId:'"'
+End Else
+If SearchSurname <> '' Then
+   WithClause = ' WITH U_SURNAME = "': SearchSurname :'"'
+End
+If SearchForename <> '' Then
+   If WithClause <> '' then WithClause := ' AND '
+   WithClause := ' WITH U_FORENAME = "': SearchForename : '"'
+End
+End
+
+Query := WithClause
+Query := ' ID FORENAME SURNAME DELIM_ADDRESS JOIN_DATE ACCOUNT_STATUS '
+Query := ' TOXML ELEMENTS ID.SUP'
+
+$IFDEF UNIVERSE
+EXECUTE Query, OUT. > Results
+$ELSE
+EXECUTE Query CAPTURING Results
+$ENDIF
+
+* Sometimes there is a line break before the XML begins
+Ix = Index(Results,"<",1)
+If Ix > 0 Then
+ GoSub CleanClient
+  ClientList = Results[Ix, Len(Results)]
+
+End Else
+  ErrText = 'No results selected'
+End
+
+RETURN
+
+CleanClient:
+$IFDEF UNIVERSE
+
+  Ix = Index(Results,"<U2_CLIENT",1)
+  FullTag = Results[Ix,99]["<",2,1][">",1,1]
+  If FullTag <> "U2_CLIENTS" Then
+      Results = Change(Results, FullTag,"U2_CLIENTS")
+  End
+
+$ENDIF
+Return
+
+

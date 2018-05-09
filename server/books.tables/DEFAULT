@@ -1,0 +1,6 @@
+!SCRIPT MakeTable %f %i
+BEGIN DEFAULT
+   DATEFORMAT D4
+   INCLUDEFILE books.inc
+   NAMESPACE   u2_books.model
+ENDDEFN

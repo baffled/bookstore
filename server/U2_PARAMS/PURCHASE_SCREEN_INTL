@@ -1,0 +1,32 @@
+<?xml version="1.0" ?>
+<SCREEN displayOnly="no" noClear="yes" width="740" height="560">
+<MAINFILE>U2_PURCHASES</MAINFILE>
+<MAINDICT>U2_PURCHASES</MAINDICT>
+<HEADING>Purchase Orders</HEADING>
+<PROMPTS>
+  <PROMPT x="10" y="10" text="Purchase Order" />
+  <PROMPT x="10" y="50" text="Order Date" />
+  <PROMPT x="10" y="80" text="Supplier Id" />
+  <PROMPT x="10" y="110" text="Shipping Cost" />
+  <PROMPT x="200" y="110" text="Delivery Date" />
+  <PROMPT x="450" y="110" text="Order Total" />
+  <PROMPT x="10" y="150" text="Order Lines (use F3 to search)" />
+</PROMPTS>
+<FIELDS>
+  <FIELD x="100" y="10" fno="0" name="ID" length="50" depth="0" selection='SORT U2_PURCHASES BY ORDER_DATE WITH ORDER_DATE = "&lt;&lt;Enter Order Date&gt;&gt;" ORDER_DATE SUPPLIER_NAME GOODS_TOTAL_INTL TAX_VALUE_INTL' />
+  <FIELD x="100" y="50" fno="1" name="ORDER_DATE" length="100" depth="0" />
+  <FIELD x="100" y="80" fno="2" name="SUPPLIER_ID" length="60" depth="0"  relates="U2_SUPPLIERS" selection="SORT U2_SUPPLIERS FULLNAME"  />
+  <FIELD x="200" y="80" name="SUPPLIER_NAME" length="200" depth="0" entryType="CALC" />
+  <FIELD x="100" y="110" fno="3" name="SHIP_COST_INTL" length="60" depth="0" conv="MD2"  />
+  <FIELD x="300" y="110" fno="4" name="DELIV_DATE" length="100" depth="0"  />
+  <FIELD x="550" y="110" name="BALANCE" length="100" depth="0" entryType="CALC"  />
+  <FIELD x="10" y="180" fno="10" name="BOOK_ID" length="50" depth="10" colHead="Code" onEntry="u2_purchaseOrderEvents" relates="U2_BOOKS" selection="SORT U2_BOOKS TITLE" />
+  <FIELD x="300" y="180" name="TITLE_NAME" length="250" depth="-1" colHead="Title" depends="BOOK_ID" entryType="CALC"  />
+  <FIELD x="300" y="180" fno="11" name="ISBN" length="100" depth="-1" colHead="Catalogue" depends="BOOK_ID"  />
+  <FIELD x="300" y="180" fno="12" name="PRICE_INTL" length="70" depth="-1" colHead="Price" depends="BOOK_ID"  />
+  <FIELD x="300" y="180" fno="13" name="TAX_CODE" length="50" depth="-1" colHead="Tax" depends="BOOK_ID"  />
+  <FIELD x="300" y="180" fno="14" name="ORDER_QTY" length="70" depth="-1" colHead="Qty" depends="BOOK_ID" />
+  <FIELD x="300" y="180" fno="15" name="REJECT_QTY" length="50" depth="-1" colHead="Rej" depends="BOOK_ID" />
+  <FIELD x="300" y="180" name="LINE_TOTAL_INTL" length="50" depth="-1" colHead="Line Total" depends="BOOK_ID" entryType="CALC" />
+</FIELDS>
+</SCREEN>

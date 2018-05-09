@@ -1,0 +1,47 @@
+$BASICTYPE "P"
+SUBROUTINE u2_calcOrderTotal(Total, OrderRec)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_calcOrderTotal
+*  @@Description : Calculate the total value of an order
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO {
+*     This calculates the total value of a sales order.
+*  }
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+* TBD - Don't read the sales tax each time.
+* --------------------------------------------------------------------------
+$INCLUDE books.bp u2_common.h
+$INCLUDE books.inc U2_ORDERS.h
+$INCLUDE books.inc U2_SALESTAX.h
+Total = 0
+Total = OrderRec<U2.ORDERS.SHIP.COST>
+NoLines = DCOUNT(OrderRec<U2.ORDERS.BOOK.ID>,@VM)
+FOR I = 1 TO NoLines
+LineTotal = OrderRec<U2.ORDERS.QTY,I> * OrderRec<U2.ORDERS.PRICE,I>
+TaxCode = OrderRec<U2.ORDERS.TAX.CODE,I>
+READV TaxRate FROM F.SALESTAX, TaxCode, U2.SALESTAX.RATE ELSE
+TaxRate = 0
+END
+SalesTax = LineTotal * TaxRate / 100
+LineTotal = LineTotal + SalesTax
+Total += LineTotal
+NEXT I
+Total = INT(Total)
+RETURN

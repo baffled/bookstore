@@ -1,0 +1,87 @@
+$BASICTYPE "P"
+SUBROUTINE u2_getClientData( ClientId, ClientData, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_getClientData
+*  @@Description : Get a full set of data for a client
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$INCLUDE u2_common.h
+$INCLUDE books.inc U2_CLIENTS.h
+$INCLUDE books.inc U2_CLIENTDATA.h
+$INCLUDE books.inc U2_CLIENT_ORDERS.h
+$INCLUDE books.inc U2_ORDERS.h
+$INCLUDE books.inc U2_PAYMENTS.h
+ClientData= ''
+ClientData<U2.CLIENTDATA.CLIENTID> = ClientId
+READ ClientRec FROM F.CLIENTS, ClientId ELSE
+ClientRec = ''
+ErrText = 'Unknown Client'
+RETURN
+END
+ClientData<U2.CLIENTDATA.SURNAME> = ClientRec<U2.CLIENTS.SURNAME>
+ClientData<U2.CLIENTDATA.FORENAME> = ClientRec<U2.CLIENTS.FORENAME>
+ClientData<U2.CLIENTDATA.ADDRESS> = ClientRec<U2.CLIENTS.ADDRESS>
+ClientData<U2.CLIENTDATA.JOINDATE> = OCONV(ClientRec<U2.CLIENTS.JOIN.DATE>,"D4/")
+* Get client orders
+READ CliOrderRec FROM F.CLIENT.ORDERS, ClientId ELSE
+CliOrderRec = ''
+END
+NumOrders = DCOUNT(CliOrderRec<U2.CLIENT.ORDERS.ORDER.IDS>,@VM)
+FOR OrderNo = 1 TO NumOrders
+OrderId = CliOrderRec<U2.CLIENT.ORDERS.ORDER.IDS,OrderNo>
+GOSUB AddOrder
+NEXT OrderNo
+* Get payment history
+CALL u2_getClientPayments(ClientId, PaymentIds, ErrText)
+NumPayments = DCOUNT(PaymentIds,@FM)
+FOR PayNo =1 TO NumPayments
+PayId = PaymentIds<PayNo>
+GOSUB AddPayment
+NEXT PayNo
+RETURN
+* --------------------------------------------------------------------------
+* Add Order
+* --------------------------------------------------------------------------
+AddOrder:
+READ OrderRec FROM F.ORDERS, OrderId ELSE
+RETURN
+END
+ClientData<U2.CLIENTDATA.ORDERIDS, OrderNo> = OrderId
+ClientData<U2.CLIENTDATA.ORDERSTATUS, OrderNo> = OrderRec<U2.ORDERS.ORDER.STATUS>
+ClientData<U2.CLIENTDATA.ORDERDATE, OrderNo> = OCONV(FIELD(OrderId,"*",1),"D4/")
+Total = 0                           
+CALL u2_calcOrderTotal(Total, OrderRec)
+ClientData<U2.CLIENTDATA.ORDERTOTAL, OrderNo> = Total
+RETURN
+* --------------------------------------------------------------------------
+* add payment
+* --------------------------------------------------------------------------
+AddPayment:
+READ PaymentRec FROM F.PAYMENTS, PayId ELSE
+RETURN
+END
+ClientData<U2.CLIENTDATA.PAYMENTIDS, PayNo> = PayId
+ClientData<U2.CLIENTDATA.PAYMENTAMT, PayNo> = INT(PaymentRec<U2.PAYMENTS.AMOUNT>)
+ClientData<U2.CLIENTDATA.PAYMENTDATE, PayNo> = OCONV(PaymentRec<U2.PAYMENTS.PAY.DATE>,"D4/")
+RETURN
+

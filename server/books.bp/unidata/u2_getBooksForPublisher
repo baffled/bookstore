@@ -1,0 +1,74 @@
+$BASICTYPE "P"
+SUBROUTINE u2_getBooksForPublisher( SearchData, BookList, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_getBooksForPublisher
+*  @@Description : Get an array of summary details for all books by an author
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$INCLUDE u2_common.h
+$INCLUDE books.inc U2_AUTHORS.h
+$INCLUDE books.inc U2_BOOKS.h
+$INCLUDE books.inc U2_PUBLISHERS.h
+$INCLUDE books.inc U2_BOOK_SUMMARY.h
+BookList = ''
+ErrText = ''
+PublisherId = SearchData<1>
+Intl = SearchData<2>
+READ PublisherRec FROM F.PUBLISHERS, PublisherId ELSE
+PublisherRec = ''
+END
+NumberOfBooks = DCOUNT(PublisherRec<U2.PUBLISHERS.BOOK.IDS>,@VM)
+IF NOT(NumberOfBooks) THEN
+ErrText = 'No books found for author ':PublisherId
+RETURN
+END
+IF Intl THEN
+PriceConv = "MD2,[,'.',',',]"
+END ELSE
+PriceConv = "MD2"
+END
+FOR BookNumber = 1 TO NumberOfBooks
+BookId = PublisherRec<U2.PUBLISHERS.BOOK.IDS, BookNumber>
+GOSUB AddBook
+NEXT BookNumber
+RETURN
+*---------------------------------------------------------------------------
+* AddBook - add a book to the index
+*---------------------------------------------------------------------------
+AddBook:
+READ BookRec FROM F.BOOKS, BookId ELSE
+BookRec = ''
+BookRec<U2.BOOKS.TITLE> = 'Not Found'
+END
+BookList<U2.BOOK.SUMMARY.TITLE.ID, BookNumber> = BookId
+BookList<U2.BOOK.SUMMARY.TITLE, BookNumber> = BookRec<U2.BOOKS.TITLE>
+READV AuthorName FROM F.AUTHORS, BookRec<U2.BOOKS.AUTHOR.ID>, U2.AUTHORS.FULLNAME ELSE
+AuthorName = 'Not Found'
+END
+BookList<U2.BOOK.SUMMARY.AUTHOR.NAME, BookNumber> = AuthorName
+BookList<U2.BOOK.SUMMARY.ISBN, BookNumber> = BookRec<U2.BOOKS.ISBN>
+BookList<U2.BOOK.SUMMARY.SALE.PRICE, BookNumber> = OCONV(BookRec<U2.BOOKS.SALE.PRICE>,PriceConv)
+BookList<U2.BOOK.SUMMARY.MEDIA, BookNumber> = OCONV(FIELD(BookRec<U2.BOOKS.MEDIA>," ",1,1),"MCU")
+RETURN
+RETURN
+

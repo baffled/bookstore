@@ -1,0 +1,17 @@
+K:\Demo\client\incubator\u2_books\csharp\u2_books\u2_books.shared\bin\Debug\u2_books.shared.dll
+K:\Demo\client\incubator\u2_books\csharp\u2_books\u2_books.shared\bin\Debug\u2_books.shared.pdb
+K:\Demo\client\incubator\u2_books\csharp\u2_books\u2_books.shared\obj\Debug\ResolveAssemblyReference.cache
+K:\Demo\client\incubator\u2_books\csharp\u2_books\u2_books.shared\obj\Debug\u2_books.shared.dll
+K:\Demo\client\incubator\u2_books\csharp\u2_books\u2_books.shared\obj\Debug\u2_books.shared.pdb
+K:\Demo\client\incubator_u2toolkit\u2_books\csharp\u2_books\u2_books.shared\bin\Debug\u2_books.shared.dll
+K:\Demo\client\incubator_u2toolkit\u2_books\csharp\u2_books\u2_books.shared\bin\Debug\u2_books.shared.pdb
+K:\Demo\client\incubator_u2toolkit\u2_books\csharp\u2_books\u2_books.shared\obj\Debug\u2_books.shared.dll
+K:\Demo\client\incubator_u2toolkit\u2_books\csharp\u2_books\u2_books.shared\obj\Debug\u2_books.shared.pdb
+K:\Demo\client\incubator_u2toolkit\u2_books\csharp\u2_books\u2_books.shared\obj\Debug\u2_books.shared.csprojResolveAssemblyReference.cache
+K:\Demo\client\incubator_u2toolkit\u2_books\csharp\u2_books\u2_books.shared\obj\Debug\u2_books.shared.csproj.CoreCompileInputs.cache
+R:\bookstore\repository\clients\u2_books_cs_u2toolkit\u2_books.shared\bin\Debug\u2_books.shared.dll
+R:\bookstore\repository\clients\u2_books_cs_u2toolkit\u2_books.shared\bin\Debug\u2_books.shared.pdb
+R:\bookstore\repository\clients\u2_books_cs_u2toolkit\u2_books.shared\obj\Debug\u2_books.shared.csprojResolveAssemblyReference.cache
+R:\bookstore\repository\clients\u2_books_cs_u2toolkit\u2_books.shared\obj\Debug\u2_books.shared.csproj.CoreCompileInputs.cache
+R:\bookstore\repository\clients\u2_books_cs_u2toolkit\u2_books.shared\obj\Debug\u2_books.shared.dll
+R:\bookstore\repository\clients\u2_books_cs_u2toolkit\u2_books.shared\obj\Debug\u2_books.shared.pdb

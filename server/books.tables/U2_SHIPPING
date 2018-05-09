@@ -1,0 +1,36 @@
+!SCRIPT MAKETABLE %f %i
+ 
+$INCLUDE books.tables DEFAULT
+* ---------------------------------------------------------------------------
+*  @@Name        : U2_SHIPPING
+*  @@Description : Table Definition for U2_SHIPPING
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO{}
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Version Stamp
+!V!
+* ---------------------------------------------------------------------------
+BEGIN TABLE U2_SHIPPING
+TYPE 18
+MODULO 503
+SEPARATION 2
+   FIELD ID FNO 0 COLHEAD \Id\ LEN 10 JUST L
+   FIELD SHORT_DESCRIPTION FNO 1 COLHEAD \Short_description\ LEN 70 JUST L
+   FIELD COST FNO 2 COLHEAD \Cost\ MONEY LEN 8 JUST R
+   FIELD SHIPPER FNO 2 COLHEAD \Shipper\ LEN 10 JUST L
+   FIELD BASE_RATE FNO 3 COLHEAD \Base_rate\ MONEY LEN 8 JUST R
+   FIELD CODE_LIST EXPR \ID:'|':SHORT_DESCRIPTION\ COLHEAD \Code_list\ LEN 20 JUST L
+   PHRASE ALL_FIELDS \ID SHORT_DESCRIPTION COST\
+   PHRASE DATA_FIELDS \ID SHORT_DESCRIPTION COST\
+ENDDEFN

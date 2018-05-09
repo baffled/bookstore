@@ -1,0 +1,10 @@
+SUBROUTINE u2_GetNextPO(Counter)
+$INCLUDE u2_common.h
+READU Rec FROM F.PARAMS,"NEXT.PO" ELSE
+Rec = 'X':@FM:0
+END
+Rec<2> = Rec<2> + 1
+Counter = Rec<2>
+WRITE Rec ON F.PARAMS,"NEXT.PO"
+RETURN
+

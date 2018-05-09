@@ -1,0 +1,7 @@
+PA
+ENTER U2_SHIPPING _
+  HEADING "Shipping Costs" _
+  @(2,2) "Shipping Code" @(15,2) FIELD ID _
+  @(2,4) "Short " @(15,4) FIELD SHORT_DESCRIPTION _
+  @(2,5) "Cost"  @(15,5) FIELD COST
+  

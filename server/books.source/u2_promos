@@ -1,0 +1,128 @@
+$IFDEF UNIDATA
+$BASICTYPE "P"
+$ENDIF
+       SUBROUTINE u2_promos( OrderRec, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_promos
+*  @@Description : apply any current promotions
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$IFDEF UNIVERSE
+$OPTIONS PICK
+$ENDIF
+
+$INCLUDE books.bp u2_common.h
+$INCLUDE books.inc U2_ORDERS.h
+$INCLUDE books.inc U2_BOOKS.h
+$INCLUDE books.inc U2_PROMOTIONS.h
+$INCLUDE books.inc U2_SALESTAX.h
+
+       COMMON /U2_PROMO/ PROMOTIONS(10), PROMO_INIT, PROMO_COUNT, PROMO_IDS
+
+* First hold current promotions in an array to prevent repeated reading
+       If Not(PROMO_INIT) Then
+          PROMO_INIT = @True
+          PROMO_COUNT = 0
+          MAT PROMOTIONS = ''
+          PROMO_IDS = ''
+          Execute "SELECT U2_PROMOTIONS",SELECT. > SLIST
+          Fin = @False
+          Loop
+             ReadNext Id From SLIST ELse Fin = @True
+          Until Fin Do
+             Read PromoRec From F.PROMOTIONS, Id Then
+                PROMO_COUNT += 1
+                PROMOTIONS(PROMO_COUNT) = PromoRec
+                PROMO_IDS<PROMO_COUNT> = Id
+             End
+          Repeat
+       End
+
+* need to undo any previous promotions and set back to the original pricing
+* before recalculating in case they are no longer valid.
+       NoLines = DCount(OrderRec<U2_ORDERS.BOOK_ID>,@VM)
+       For I = 1 to NoLines
+          BookId = OrderRec<U2_ORDERS.BOOK_ID,I>
+          Read BookRec From F.BOOKS, BookId Then
+             OrderRec<U2_ORDERS.PRICE, I> = BookRec<U2_BOOKS.SALE_PRICE>
+             TaxCode = OrderRec<U2_ORDERS.TAX_CODE,I>
+             If OrderRec<U2_ORDERS.TAX_CODE,I> = '' Then
+                TaxCode = BookRec<U2_BOOKS.TAX_CODE>
+                OrderRec<U2_ORDERS.TAX_CODE, I> = TaxCode
+                ReadV Rate From F.SALESTAX, TaxCode, U2_SALESTAX.RATE Then
+                   OrderRec<U2_ORDERS.TAX_RATE,I> = Rate
+                End
+             End 
+          End
+       Next I
+
+* get a list of all titles on the order that are in the promotion
+* split these into groups of minimum quantity and apply the discount to the first one in the set
+* this supports diect discounts (qty =1) or 'n for 1' offers
+
+       For PromoCounter = 1 To PROMO_COUNT
+          PromoRec = PROMOTIONS(PromoCounter)
+          PromoId  = PROMO_IDS<PromoCounter>
+          GoSub ApplyPromotion
+       Next PromoCounter
+
+       RETURN
+
+ApplyPromotion:      
+       Found = ''
+
+       For Pos = 1 To NoLines
+          BookId = OrderRec<U2_ORDERS.BOOK_ID,Pos>
+          Locate BookId In PromoRec<U2_PROMOTIONS.BOOK_ID> Setting P2 Then
+             If PromoRec<U2_PROMOTIONS.MIN_QTY> <= 1 Then
+                GoSub ApplyDiscount
+             End Else
+                Found<-1> = Pos
+             End
+          End
+       Next
+
+       NoFound = DCount(Found,@FM)
+       If NoFound = 0 Then
+          Return
+       End
+
+       If NoFound >= PromoRec<U2_PROMOTIONS.MIN_QTY> Then
+          Pos = Found<1>
+          GoSub ApplyDiscount
+       End
+
+       Return                                       
+
+ApplyDiscount:       
+       OrderRec<U2_ORDERS.PROMO_ID, Pos> = PromoId
+       ReadV Price From F.BOOKS, BookId, U2_BOOKS.SALE_PRICE Then
+          Discount = Price * PromoRec<U2_PROMOTIONS.DISCOUNT_PCT> / 100
+          OrderRec<U2_ORDERS.PRICE,Pos> = Discount
+       End
+       Return
+
+
+
+
+

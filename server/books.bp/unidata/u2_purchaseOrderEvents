@@ -1,0 +1,60 @@
+$BASICTYPE "P"
+SUBROUTINE u2_purchaseOrderEvents( fieldName, eventName, id, record, outdata, actions)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_purchaseOrderEvents
+*  @@Description : Backing the purchase order entry screen
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$INCLUDE books.source u2_common.h
+$INCLUDE books.inc U2_BOOKS.h
+$INCLUDE books.inc U2_AUTHORS.h
+$INCLUDE books.inc U2_PUBLISHERS.h
+$INCLUDE books.inc U2_BOOKDATA.h
+$INCLUDE books.inc U2_SALESTAX.h
+$INCLUDE books.inc U2_SUPPLIERS.h
+$INCLUDE books.inc U2_PURCHASES.h
+* Determine the even
+BEGIN CASE
+CASE eventName = "ONENTRY"
+GOSUB DoOnEntry
+END CASE
+RETURN
+* --------------------------------------------------------------------------
+* DoOnEntry: handle an onEntry event
+* --------------------------------------------------------------------------
+DoOnEntry:
+BEGIN CASE
+CASE fieldName = "BOOK_ID" ;* new or amended book id
+* update the title details where necessary
+NoTitles = DCOUNT(record<U2.PURCHASES.BOOK.ID>,@VM)
+FOR I = 1 TO NoTitles
+BookId = record<U2.PURCHASES.BOOK.ID, I>
+READ BookRec FROM F.BOOKS, BookId THEN
+record<U2.PURCHASES.ISBN, I> = BookRec<U2.BOOKS.ISBN>
+record<U2.PURCHASES.PRICE, I> = BookRec<U2.BOOKS.PURCH.PRICE>
+record<U2.PURCHASES.TAX.CODE, I> = BookRec<U2.BOOKS.TAX.CODE>
+END
+NEXT
+END CASE
+RETURN
+

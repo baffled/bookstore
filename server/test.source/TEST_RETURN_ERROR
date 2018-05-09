@@ -1,0 +1,7 @@
+SUBROUTINE TEST_RETURN_ERROR(InData, OutData, ErrText)
+
+OutData = ''
+ErrText = "ERROR ERROR ERROR"
+
+RETURN
+

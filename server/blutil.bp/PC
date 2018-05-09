@@ -1,0 +1,1484 @@
+PROGRAM PC
+*--------------------------------------------------------------------------
+*  @@Name        : PC
+*  @@Description : BASIC Precompiler
+*  @@Author      : Brian Leach
+*  @@Project     : UTILS
+*  @@Module      : GENERAL
+*--------------------------------------------------------------------------
+*  Notes
+*  -----
+*  @@INFO{
+*  This preprocesses BASIC code performing a number of essential operations _
+*  depending on the platform or options used:
+*  <ul>
+*  <li>Upper case keywords</li>
+*  <li>Conditional compilation</li>
+*  <li>Bind include files</li>
+*  <li>Convert platform structures</li>
+*  <li>Strip comments</li>
+*  <li>Resolve equate</li>
+*  </ul>
+*
+*  <b>Usage</b>
+*  PC filename itemname|* {/UNIVERSE|/UNIDATA|/JBASE/QM} [/TARGET file] [/OPTION ..]
+*  }
+*--------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*
+*  @@Log PURGED
+*--------------------------------------------------------------------------
+*  Version Stamp
+*  -------------
+*--------------------------------------------------------------------------
+* To be Done
+* ----------
+* @@T EQUATES
+* @@T Make keywords into an include
+* @@T Make tokenize into an include
+* @@T Strip comments from includes
+*--------------------------------------------------------------------------
+* @@W This is generated source. Do not edit this directly.
+*--------------------------------------------------------------------------
+$OPTIONS PICK
+VOCNAME = "VOC"
+EQU True            To 1
+EQU False           To 0
+EQU TAB             To Char(9)
+EQU LF              To Char(10)
+EQU FF              To Char(12)
+EQU CR              To Char(13)
+EQU ESC             To Char(27)
+EQU ZERO            To Char(0)  
+EQU FM              To Char(254)
+EQU VM              To Char(253)
+EQU SVM             To Char(252)
+EQU CRLF            To CHAR(13):CHAR(10)
+EQU BIG             To 999
+EQU HUGE            To 99999999
+Prompt ""
+EQU FLAVOUR.JBASE To 1
+EQU FLAVOUR.UNIDATA To 2
+EQU FLAVOUR.D3 To 3
+EQU FLAVOUR.UNIVERSE To 4
+EQU FLAVOUR.MVBASE To 5
+EQU FLAVOUR.QM To 6
+EQU FLAVOUR.MVON TO 7
+* Client specific flavours
+EQU FLAVOUR.HSBC To 10
+EQU NUMBERS TO "0123456789+-."
+EQU ALPHAS To "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+EQU EXTALPHAS To "ABCDEFGHIJKLMNOPQRSTUVWXYZ$._"
+EQU EXTALL To "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$._"
+Prompt ""
+ProgramName = 'PC'
+KeepWhiteSpace = @True             ; * for Tokenize routine
+OptionList = "TO":@VM:"UNIDATA":@VM:"UNIVERSE":@VM:"JBASE":@VM:"D3":@VM:"QM":@VM:"BIND":@VM:"EQUATE":@VM:"NOEQUATE":@VM:"NOBIND":@VM:"CORTEX":@VM:"NOSTRIP":@VM:"UPCASE":@VM:"MVON"
+OptionList<1,-1> = "HSBC"
+OptionList<2> = 1
+GoSub tclext.h
+If FileName = "" Then
+GoSub Usage
+STOP
+End
+* Parse options
+NoOptions = DCount(Options,@FM)
+Flavour = ""
+TargetFile = ""
+Defines = ""
+Global = ""
+AlwaysBind = @False
+AlwaysEquate = @False
+NoEquate = @False
+NoBind = @False
+Platform = "NONE"
+CortexBind = @False
+NoStrip = @False
+UpCaseAll = @False
+ConvLabels = @False
+GoSub Initialize
+For I = 1 To NoOptions
+Option = OConv(Options<I>,"MCU")
+Begin Case
+Case Option = "UNIVERSE"
+Flavour = FLAVOUR.UNIVERSE
+Defines<-1> = Option
+Platform = Option
+Case Option = "UNIDATA"
+Flavour = FLAVOUR.UNIDATA
+Defines<-1> = Option
+Platform = Option
+Case Option = "JBASE"
+Flavour = FLAVOUR.JBASE
+Defines<-1> = Option
+Platform = Option
+Case Option = "D3"
+Flavour = FLAVOUR.D3
+Defines<-1> = Option
+Platform = Option
+Case Option = "QM"
+Flavour = FLAVOUR.QM
+Defines<-1> = Option
+Platform = Option
+Case Option = "MVON"
+Flavour = FLAVOUR.MVON
+Defines<-1> = Option
+Platform = Option
+Case Option = "HSBC"
+Flavour = FLAVOUR.HSBC
+Defines<-1> = Option
+Platformm = Option
+Case Option = "TO"
+I += 1
+TargetFile = Options<I>
+Case Option = "BIND"
+AlwaysBind = @True
+Case Option = "EQUATE"
+AlwaysEquate = @True
+Case Option= "NOEQUATE"
+NoEquate = @True
+Case Option = "NOBIND"
+NoBind = @True
+Case Option = "CORTEX"
+CortexBind = @True
+Case Option = "NOSTRIP"
+NoStrip = @True
+Case Option = "UPCASE"
+UpCaseAll = @True
+End Case
+Next I
+GoSub SetFlags                     ; * set flavour dependent flags
+Prompt ''
+If TargetFile = "" Then
+Crt "Enter target filename : ":
+Input TargetFile
+If TargetFile = "" Then
+STOP
+End
+End
+Open TargetFile To OFL Else
+Crt "Cannot open ":TargetFile
+STOP
+End
+NoItems = DCount(ItemList,@FM)
+For ItemNo = 1 To NoItems
+ItemName = ItemList<ItemNo>
+GoSub DoItem
+Next ItemNo
+STOP
+*---------------------------------------------------------------------------
+* DoBind
+*---------------------------------------------------------------------------
+DoBind:
+BindWord = "$":"BIND"
+If BindIncludes Then
+Rec = Change(Rec,'$':'INCLUDE','$':'BIND')
+End
+GoSub DoBinds
+Return
+*---------------------------------------------------------------------------
+* DoBinds
+*---------------------------------------------------------------------------
+DoBinds:
+Occur = 1
+DoneBinds = @False
+Loop
+FindStr BindWord In OConv(Rec,"MCU"), Occur Setting FNo Else
+DoneBinds = @True
+End
+Until DoneBinds Do
+Line = TrimF(Rec<FNo>)
+Begin Case
+Case Line[1,1] Match "!":@vm:"*"
+Occur += 1
+Case 1
+SplitLine = Trim(Line)
+GoSub Split
+Locate BindWord In OConv(Words,"MCU") Setting Pos Then
+FN = Words<Pos+1>
+ID = Words<Pos+2>
+BindNoStrip = (Words<Pos+3> = "NOSTRIP")
+If ID = "" then
+ID = FN ; FN = FileName
+End
+Found = @False
+Open FN To TFL Then
+Read IncRec From TFL, ID Then
+Found = @True
+End
+End
+If Found Then
+If BindIncludes Then
+IncRec = Change(IncRec,'$':'INCLUDE','$':'BIND')
+End
+* Strip comments and headers from the bind records
+If Not(NoStrip Or BindNoStrip) Then
+IncDc = DCount(IncRec,@FM)
+For IncCt = IncDc To 1 Step -1
+IncLine = TrimF(IncRec<IncCt>)
+If IncLine[1,1] = "*" or IncLine[1,1] = "!" Then
+Del IncRec<IncCt>
+End
+Next
+End
+* remove any nocompile flags from the include
+IncDc = DCount(IncRec,@FM)
+For IncCt = IncDc To 1 Step -1
+IncLine = TrimF(IncRec<IncCt>)
+If IncLine = "$NOCOMPILE" Then
+Del IncRec<IncCt>
+End
+Next
+Rec<FNo> = IncRec
+End Else
+Crt "Cannot Find ":FN:" ":ID
+Occur += 1
+End
+End Else
+Occur += 1
+End
+End Case
+Repeat
+Return
+*---------------------------------------------------------------------------
+* DoCortex
+*---------------------------------------------------------------------------
+DoCortex:
+FirstLine = 0
+Dc = DCount(Rec,@FM)
+For I = 1 To Dc
+Line = TrimF(Rec<I>)
+If Line[1,2] = "*%" Then
+If FirstLine = 0 Then
+FirstLine = I
+End
+Command = Line["%",2,1]
+Begin Case
+Case Command = "BEGIN"
+Del Rec<I>
+Dc -= 1
+I -= 1
+Case 1
+FN = Command[" ",1,1]
+IncID = Command[" ",2,1]
+Open FN to TFL Else
+Crt "Cannot open ":FN
+Return
+End
+Read IncRec From TFL, IncID Else
+Crt "Cannot read ":FN:" ":IncID
+Return
+End
+* Strip comments and headers from the bind records
+If Not(NoStrip Or BindNoStrip) Then
+IncDc = DCount(IncRec,@FM)
+For IncCt = IncDc To 1 Step -1
+IncLine = TrimF(IncRec<IncCt>)
+If IncLine[1,1] = "*" or IncLine[1,1] = "!" Then
+Del IncRec<IncCt>
+End
+Next
+End
+Rec<I> = IncRec
+I -= 1
+Dc -= 1
+Dc += DCount(Temp,@FM)
+End Case
+End Else
+If Line = "" Then
+Rec<I> = "*"              ; * Cortex don't like spaces?
+End
+End
+Next
+* there are some global entries that always get written
+Open "GDEF" To GDEF Else
+Crt "Cannot open the GDEF File"
+RETURN
+End
+Read Temp From GDEF, "CORTEX_INCLUDES" Else
+Crt "missing the CORTEX_INCLUDES Information."
+RETURN
+End
+Ins Temp Before Rec<FirstLine>
+Return
+*---------------------------------------------------------------------------
+* Global changes to programs
+*----------------------------------------------------------------------
+* Note: The rather strange way of storing the first value of swaps is
+*       to ensure this program doesn't accidentally change itself.
+*---------------------------------------------------------------------------
+DoGlobal:
+For I = DCount(Global, @FM) To 1 Step -1
+Rec = Change(Rec, Global<I, 1>, Global<I, 2>)
+Rec = Change(Rec, UpCase(Global<I, 1>), Global<I, 2>)
+Rec = Change(Rec, DownCase(Global<I, 1>), Global<I, 2>)
+Next
+Return
+*---------------------------------------------------------------------------
+* DoItem
+*---------------------------------------------------------------------------
+DoItem:
+Read Rec From FL, ItemName Else
+Crt "Cannot read record ":ItemName
+Return
+End
+Crt "Processing ":ItemName:" ":
+GoSub InitRecord
+GoSub DoPlatform
+If Done Then Return
+GoSub DoBind
+If CortexBind Then
+GoSub DoCortex
+End
+GoSub DoGlobal
+GoSub DoParse
+If Not(Done) Then
+Write NewProg On OFL, ItemName
+Crt "Written ":ItemName
+End
+Return
+*---------------------------------------------------------------------------
+* DoPlatform
+*---------------------------------------------------------------------------
+DoPlatform:
+Key = "$":"PLATFORM"
+DoneCheck = @False
+Occur = 1
+Loop
+FindStr Key In OConv(Rec,"MCU"), Occur Setting FNo Else
+DoneCheck = @True
+End
+Until DoneCheck Do
+Line = TrimF(Rec<FNo>)
+Begin Case
+Case Line[1,1] Match "!":@vm:"*"
+Occur += 1
+Case 1
+SplitLine = Trim(Line)
+GoSub Split
+Locate Key In OConv(Words,"MCU") Setting Pos Then
+Words = Words[@FM,Pos+1,Len(Words)]
+Locate Platform In OConv(Words,"MCU") Setting Pos Else
+Done = @True
+End
+Del Rec<FNo>
+End Else
+Occur += 1
+End
+End Case
+Repeat
+Return
+*---------------------------------------------------------------------------
+* InitRecord
+*---------------------------------------------------------------------------
+InitRecord:
+ShowBlock = @True
+Conditions = ""
+Done = @False
+IsActive = @True
+BindList = ''
+EquVals = ''
+EquToks = ''
+Labels = ''
+Return
+*---------------------------------------------------------------------------
+* DoEquate
+*---------------------------------------------------------------------------
+DoEquate:
+Tok = Words<3>
+Begin Case
+Case UpCase(Words<5>) = "LIT"
+TokVal = TrimF(TrimB(FIELD(Words,@FM, 7, 9999)))
+If TokVal[1,1] = "'" Or TokVal[1,1] = '"' Then
+TokVal = Field(TokVal, TokVal[1,1], 2, 1)
+End
+Case 1
+TokVal = TrimB(FIELD(Words,@FM, 7, 9999))
+End Case
+!      Convert @FM TO " " In TokVal
+Convert @FM To "" In TokVal
+Ix = Index(TokVal,";*",1)
+IF Ix Then TokVal = TokVal[1, Ix-1]
+Ix = Index(TokVal,"; *",1)
+If Ix Then TokVal = TokVal[1, Ix-1]
+TokVal = TrimB(TokVal)
+Locate Tok In EquToks By "AL" Setting Pos Else
+Ins Tok Before EquToks<Pos>
+Line = TokVal
+GoSub Tokenize
+Convert @FM To @VM In Words
+Ins Words Before EquVals<Pos>
+End
+Return
+*---------------------------------------------------------------------------
+* DoParse
+*---------------------------------------------------------------------------
+DoParse:
+NewProg = ''
+ThisLine = 0
+NoLines = DCount(Rec,@FM)
+Loop
+ThisLine += 1
+Until ThisLine > NoLines Do
+Line = Rec<ThisLine>
+GoSub ParseLine
+Repeat
+Return
+*---------------------------------------------------------------------------
+* ParseLine
+*---------------------------------------------------------------------------
+ParseLine:
+GoSub Tokenize
+NewLine = ""
+ThisWord = 0
+* First look for precompiler commands
+UWord = UWords<1>
+Begin Case
+Case UWord = "$IFDEF" Or UWord = "$ELSE" Or UWord = "$ENDIF" Or UWord = "$DEFINE" Or UWord = "$UNDEFINE" Or UWord = "$IFNDEF"
+GoSub DoConditional
+Case UWord = "$":"STOP" And IsActive
+ThisLine = NoLines
+Case UWord = "$":"QUIT" and IsActive
+ThisLine = NoLines
+Done = 1
+Case UWord = "$":"NOCOMPILE"    ; * don't allow compile as stand-alone
+Crt "Cannot compile stand-alone ":ItemName
+Done = @True
+Case NeedEquates And (UWord = 'EQU' Or UWord = 'EQUATE')
+GoSub DoEquate
+Case 1
+GoSub DoRegular
+End Case
+Return
+*---------------------------------------------------------------------------
+* NextWord
+*---------------------------------------------------------------------------
+NextWord:
+ThisWord += 1
+If Words<ThisWord> = Space(Len(Words<ThisWord>)) Then
+ThisWord += 1
+End
+Word = Words<ThisWord>
+UWord = UWords<ThisWord>
+Return
+*---------------------------------------------------------------------------
+* DoConditional
+*---------------------------------------------------------------------------
+DoConditional:
+GoSub NextWord
+Begin Case
+Case UWord="$DEFINE"
+GoSub NextWord
+Locate UWord In Defines Setting Pos Else
+Defines<-1> = UWord
+End
+Case UWord = "$UNDEFINE"
+GoSub NextWord
+Locate UWord In Defines Setting Pos Then
+Del Defines<Pos>
+End
+Case UWord = "$IFDEF"
+GoSub ParseCondition
+Ins IsActive Before Conditions<1>
+IsActive = Cond
+Case UWord = "$IFNDEF"
+GoSub ParseCondition
+Cond = Not(Cond)
+Ins IsActive Before Conditions<1>
+IsActive = Cond
+Case UWord = "$ENDIF"
+IsActive = Conditions<1>
+Del Conditions<1>
+Case UWord = "$ELSE"
+IsActive = Not(IsActive)
+End Case
+Return
+*---------------------------------------------------------------------------
+* DoRegular
+*---------------------------------------------------------------------------
+DoRegular:
+If Not(IsActive) Then
+Return
+End
+* First look for a starting label
+Begin Case
+Case Words<1> Match "1N0N"
+ThisWord = 1
+NewLine = Words<1>
+Case Words<2> = ":"
+NewLine = Words<1>:Words<2>
+If UpCaseAll Then
+NewLine = UpCase(NewLine)
+End
+ThisWord = 2
+End Case
+SOS = @True                        ; * Start of statement
+Loop
+ThisWord += 1
+Until ThisWord > NoWords Do
+Word = Words<ThisWord>
+UWord = UWords<ThisWord>
+* Look for a comment
+Begin Case
+Case Word = Space(Len(Word))
+NewLine := Word
+Case Word = ";"
+SOS = @True
+NewLine := Word
+Case (Word = "*" Or Word = "!" Or UWord = "REM") And SOS   ; * comment
+RestOfLine = Words[@FM,ThisWord,NoWords]
+Convert @FM To "" In RestOfLine
+NewLine := RestOfLine
+ThisWord = NoWords
+Case 1
+SOS = @False
+* Look for equate tokens
+If NeedEquates Then
+Loop
+* this handles call @s
+RWord = Word
+If (Word[1,1] = '@') And (Len(Word) > 1) Then
+Locate UpCase(Word) In StdConvs<1> Setting Pos Else
+RWord = Word[2,Len(Word)]
+End
+End
+Locate RWord In EquToks By "AL" Setting Pos Then
+NewWord = Convert(@VM,@FM,EquVals<Pos>)
+If (Word[1,1] = '@') and (RWord <> Word) Then
+NewWord = '@':NewWord
+End
+NoWords += (DCount(NewWord,@FM)-1)
+Words<ThisWord> = NewWord
+UWords<ThisWord> = UpCase(NewWord)
+Word = Words<ThisWord>
+UWord = UWords<ThisWord>
+End Else
+Pos = 0
+End
+Until Pos = 0 Do
+Repeat
+End
+* Case conversion
+Begin Case
+Case UpCaseAll
+If Not(Word[1,1] = '"' Or Word[1,1] = "'") Then
+Word = UWord
+End
+Case ConvCase
+Locate UWord In Keywords By "AL" Setting Pos Then
+Word = UWord
+End
+End Case
+* Program header
+* NOT on QM as it will sod up class methods
+If Word = "PROGRAM" Or UWord = "SUBROUTINE" Or UWord = "FUNCTION" Then
+If Not(Flavour = FLAVOUR.QM) Then
+NextWord = ThisWord+1
+If Words<NextWord> = "" Then
+Ins " " Before Words<NextWord>
+Ins "" Before UWords<NextWord>
+NextWord += 1
+NoWords += 1
+End Else
+If Words<NextWord> = Space(Len(Words<NextWord>)) Then
+NextWord += 1
+End
+End
+If UpCase(Words<NextWord>) <> UpCase(ItemName) Then
+Begin Case
+Case Words<NextWord> = "("
+Ins ItemName Before Words<NextWord>
+Ins ItemName Before UWords<NextWord>
+NoWords += 1
+Case Words<NextWord> = ""
+Ins ItemName Before Words<NextWord>
+Ins ItemName Before UWords<NextWord>
+NoWords += 1
+Case 1
+Words<NextWord> = ItemName
+UWords<NextWord> = ItemName
+NoWords += 1
+End Case
+End
+End
+End
+* Else -> On Error (this will need more work)
+If UWord = "WRITE" Or UWord = "DELETE" Then
+If Flavour = FLAVOUR.UNIDATA Or Flavour = FLAVOUR.JBASE Or Flavour = FLAVOUR.MVON Then
+Locate "ELSE" In UWords Setting Pos Then
+UWords<Pos> = "ON ERROR"
+End
+End
+End
+* Replacements
+If UWord <> "" Then
+Locate UWord in ReplaceList<1> Setting Pos Then
+Word = ReplaceList<2,Pos>
+End
+End
+* specific conversions by flavour
+Begin Case
+End Case
+NewLine := Word
+End Case
+Repeat
+NewProg<-1> = NewLine
+Return
+*---------------------------------------------------------------------------
+* ParseCondition
+*---------------------------------------------------------------------------
+ParseCondition:
+Conn = "OR"
+Cond = @False
+Loop
+Gosub NextWord
+Negate = (UWord = "NOT")
+If Negate Then GoSub NextWord
+isdef = 0
+Locate UWord In Defines Setting Pos Then
+IsTrue = @True
+End Else
+IsTrue = @False
+End
+If Negate Then IsTrue = Not(IsTrue)
+if Conn = "OR" then
+Cond = (Cond Or IsTrue)
+end else
+Cond = (Cond And IsTrue)
+end
+GoSub NextWord
+Until UWord = "" Do
+Conn = UWord
+Repeat
+Return
+*---------------------------------------------------------------------------
+* Tokenize
+*---------------------------------------------------------------------------
+Tokenize:
+Words = ''
+UWords = ""
+Line = TrimF(Line)
+L = Len(Line)
+ThisPos = 0                        ; * Position within line
+NoWords = 0
+Loop
+ThisPos += 1
+Until ThisPos > L Do
+Word = ""
+If KeepWhiteSpace Then
+Loop
+C = Line[ThisPos,1]
+U = UpCase(C)
+While Line[ThisPos,1] Match " ":@VM:TAB Do
+Word := " "               ; * strip tabs
+ThisPos += 1
+Repeat
+If Word <> "" then
+NoWords += 1
+Words<NoWords> = Word
+UWords<NoWords> = Word
+End
+End
+Begin Case
+Case C = "'" Or C = '"' Or C = "\"
+Word = C
+Loop
+ThisPos += 1
+Word := Line[ThisPos,1]
+Until (ThisPos > L) Or (Line[ThisPos,1] = C)
+Repeat
+Case Index(NUMBERS, C, 1)
+Word = C
+Loop
+C = Line[ThisPos+1,1]
+While (ThisPos < L) And Index(NUMBERS,C,1)
+Word := C
+ThisPos += 1
+Repeat
+Case C = "$" Or C= "%" Or C = "@" Or Index(ALPHAS, U, 1)
+Word = C
+Loop
+C = Line[ThisPos+1,1]
+U = UpCase(C)
+While (ThisPos < L) And Index(EXTALL,U,1)
+Word := C
+ThisPos += 1
+Repeat
+Case C = ":" Or C = "+" Or C = "-" Or C = "<" Or C = ">"
+Word = C
+If Line[ThisPos+1,1] = "=" Then
+Word := "="
+ThisPos += 1
+End
+Case 1
+Word = C
+End Case
+NoWords += 1
+Words<NoWords> = Word
+UWords<NoWords> = OConv(Word,"MCU")
+Repeat
+Return
+*---------------------------------------------------------------------------
+* Initialize
+*---------------------------------------------------------------------------
+Initialize:
+BindIncludes = @False
+GoSub InitReplaces
+GoSub InitKeywords
+Return
+*---------------------------------------------------------------------------
+* InitKeywords
+*---------------------------------------------------------------------------
+InitKeywords:
+Keywords = ''
+Keywords<-1> = "$CHAIN"
+Keywords<-1> = "$COPYRIGHT"
+Keywords<-1> = "$DEFINE"
+Keywords<-1> = "$EJECT"
+Keywords<-1> = "$ELSE"
+Keywords<-1> = "$ENDIF"
+Keywords<-1> = "$IFDEF"
+Keywords<-1> = "$IFNDEF"
+Keywords<-1> = "$INCLUDE"
+Keywords<-1> = "$INSERT"
+Keywords<-1> = "$MAP"
+Keywords<-1> = "$":"OPTIONS"
+Keywords<-1> = "$PAGE"
+Keywords<-1> = "$UNDEFINE"
+Keywords<-1> = "@ABORT.CODE"
+Keywords<-1> = "@ACCOUNT"
+Keywords<-1> = "@AM"
+Keywords<-1> = "@ANS"
+Keywords<-1> = "@AUTHORIZATION"
+Keywords<-1> = "@CRTHIGH"
+Keywords<-1> = "@CRTWIDE"
+Keywords<-1> = "@COMMAND"
+Keywords<-1> = "@COMMAND.STACK"
+Keywords<-1> = "@CONV"
+Keywords<-1> = "@DATA.PENDING"
+Keywords<-1> = "@DATE"
+Keywords<-1> = "@DAY"
+Keywords<-1> = "@DICT"
+Keywords<-1> = "@FALSE"
+Keywords<-1> = "@FILENAME"
+Keywords<-1> = "@FILE.NAME"
+Keywords<-1> = "@FM"
+Keywords<-1> = "@FORMAT"
+Keywords<-1> = "@HDBC"
+Keywords<-1> = "@HEADER"
+Keywords<-1> = "@HENV"
+Keywords<-1> = "@HSTMT"
+Keywords<-1> = "@ID"
+Keywords<-1> = "@IM"
+Keywords<-1> = "@ISOLATION"
+Keywords<-1> = "@LEVEL"
+Keywords<-1> = "@LOGNAME"
+Keywords<-1> = "@LPTRHIGH"
+Keywords<-1> = "@LPTRWIDE"
+Keywords<-1> = "@MONTH"
+Keywords<-1> = "@MV"
+Keywords<-1> = "@NB"
+Keywords<-1> = "@ND"
+Keywords<-1> = "@NEW"
+Keywords<-1> = "@NI"
+Keywords<-1> = "@NS"
+Keywords<-1> = "@NULL"
+Keywords<-1> = "@NULL.STR"
+Keywords<-1> = "@NV"
+Keywords<-1> = "@OLD"
+Keywords<-1> = "@OPTION"
+Keywords<-1> = "@PARASENTENCE"
+Keywords<-1> = "@PATH"
+Keywords<-1> = "@RECCOUNT"
+Keywords<-1> = "@RECORD"
+Keywords<-1> = "@RECUR0"
+Keywords<-1> = "@RECUR1"
+Keywords<-1> = "@RECUR2"
+Keywords<-1> = "@RECUR3"
+Keywords<-1> = "@RECUR4"
+Keywords<-1> = "@SCHEMA"
+Keywords<-1> = "@SELECTED"
+Keywords<-1> = "@SENTENCE"
+Keywords<-1> = "@SM"
+Keywords<-1> = "@SQL.CODE"
+Keywords<-1> = "@SQL.DATE"
+Keywords<-1> = "@SQL.ERROR"
+Keywords<-1> = "@SQL.STATE"
+Keywords<-1> = "@SQL.TIME"
+Keywords<-1> = "@SQL.WARNING"
+Keywords<-1> = "@SQLPROC.NAME"
+Keywords<-1> = "@SQLPROC.TX.LEVEL"
+Keywords<-1> = "@STDFIL"
+Keywords<-1> = "@SVM"
+Keywords<-1> = "@SYS.BELL"
+Keywords<-1> = "@SYSTEM.RETURN.CODE"
+Keywords<-1> = "@SYSTEM.SET"
+Keywords<-1> = "@TERM.TYPE"
+Keywords<-1> = "@TIME"
+Keywords<-1> = "@TM"
+Keywords<-1> = "@TRANSACTION"
+Keywords<-1> = "@TRANSACTION.ID"
+Keywords<-1> = "@TRANSACTION.LEVEL"
+Keywords<-1> = "@TRUE"
+Keywords<-1> = "@TTY"
+Keywords<-1> = "@USER0"
+Keywords<-1> = "@USER1"
+Keywords<-1> = "@USER2"
+Keywords<-1> = "@USER3"
+Keywords<-1> = "@USER4"
+Keywords<-1> = "@USERNO"
+Keywords<-1> = "@USER.NO"
+Keywords<-1> = "@USER.RETURN.CODE"
+Keywords<-1> = "@VM"
+Keywords<-1> = "@WHO"
+Keywords<-1> = "@YEAR"
+Keywords<-1> = "ABORT"
+Keywords<-1> = "ABS"
+Keywords<-1> = "ABSS"
+Keywords<-1> = "ACOS"
+Keywords<-1> = "ADDS"
+Keywords<-1> = "ALPHA"
+Keywords<-1> = "AND"
+Keywords<-1> = "ANDS"
+Keywords<-1> = "ARG."
+Keywords<-1> = "ASCII"
+Keywords<-1> = "ASIN"
+Keywords<-1> = "ASSIGN"
+Keywords<-1> = "ASSIGN"
+Keywords<-1> = "ASSIGNED"
+Keywords<-1> = "ATAN"
+Keywords<-1> = "AUTHORIZATION"
+Keywords<-1> = "AUXMAP"
+Keywords<-1> = "BEFORE"
+Keywords<-1> = "BEGIN"
+Keywords<-1> = "BEGIN"
+Keywords<-1> = "BITAND"
+Keywords<-1> = "BITNOT"
+Keywords<-1> = "BITOR"
+Keywords<-1> = "BITRESET"
+Keywords<-1> = "BITSET"
+Keywords<-1> = "BITTEST"
+Keywords<-1> = "BITXOR"
+Keywords<-1> = "BREAK"
+Keywords<-1> = "BSCAN"
+Keywords<-1> = "BY"
+Keywords<-1> = "BYTE"
+Keywords<-1> = "BYTELEN"
+Keywords<-1> = "BYTETYPE"
+Keywords<-1> = "BYTEVAL"
+Keywords<-1> = "CALL"
+Keywords<-1> = "CAPTURING"
+Keywords<-1> = "CASE"
+Keywords<-1> = "CATS"
+Keywords<-1> = "CHAIN"
+Keywords<-1> = "CHANGE"
+Keywords<-1> = "CHAR"
+Keywords<-1> = "CHARS"
+Keywords<-1> = "CHECKSUM"
+Keywords<-1> = "CLEAR"
+Keywords<-1> = "CLEARDATA"
+Keywords<-1> = "CLEARFILE"
+Keywords<-1> = "CLEARPROMPTS"
+Keywords<-1> = "CLEARSELECT"
+Keywords<-1> = "CLOSE"
+Keywords<-1> = "CLOSESEQ"
+Keywords<-1> = "COL1"
+Keywords<-1> = "COL2"
+Keywords<-1> = "COMMIT"
+Keywords<-1> = "COMMIT"
+Keywords<-1> = "COMMON"
+Keywords<-1> = "COMPARE"
+Keywords<-1> = "CONTINUE"
+Keywords<-1> = "CONVERT"
+Keywords<-1> = "CONVERT"
+Keywords<-1> = "COS"
+Keywords<-1> = "COSH"
+Keywords<-1> = "COUNT"
+Keywords<-1> = "COUNTS"
+Keywords<-1> = "CREATE"
+Keywords<-1> = "CRT"
+Keywords<-1> = "DATA"
+Keywords<-1> = "DATE"
+Keywords<-1> = "DCOUNT"
+Keywords<-1> = "DEBUG"
+Keywords<-1> = "DEFFUN"
+Keywords<-1> = "DEL"
+Keywords<-1> = "DELETE"
+Keywords<-1> = "DELETE"
+Keywords<-1> = "DELETELIST"
+Keywords<-1> = "DELETEU"
+Keywords<-1> = "DIM"
+Keywords<-1> = "DIMENSION"
+Keywords<-1> = "DISPLAY"
+Keywords<-1> = "DIV"
+Keywords<-1> = "DIVS"
+Keywords<-1> = "DO"
+Keywords<-1> = "DOWNCASE"
+Keywords<-1> = "DQUOTE"
+Keywords<-1> = "DTX"
+Keywords<-1> = "EBCDIC"
+Keywords<-1> = "ECHO"
+Keywords<-1> = "ELSE"
+Keywords<-1> = "END"
+Keywords<-1> = "ENTER"
+Keywords<-1> = "EOF"
+Keywords<-1> = "EQS"
+Keywords<-1> = "EQU"
+Keywords<-1> = "EQUATE"
+Keywords<-1> = "EREPLACE"
+Keywords<-1> = "ERRMSG"
+Keywords<-1> = "ERROR"
+Keywords<-1> = "EXCHANGE"
+Keywords<-1> = "EXECUTE"
+Keywords<-1> = "EXIT"
+Keywords<-1> = "EXP"
+Keywords<-1> = "EXTRACT"
+Keywords<-1> = "FADD"
+Keywords<-1> = "FDIV"
+Keywords<-1> = "FFIX"
+Keywords<-1> = "FFLT"
+Keywords<-1> = "FIELD"
+Keywords<-1> = "FIELDS"
+Keywords<-1> = "FIELDSTORE"
+Keywords<-1> = "FILEINFO"
+Keywords<-1> = "FILELOCK"
+Keywords<-1> = "FILEUNLOCK"
+Keywords<-1> = "FIND"
+Keywords<-1> = "FINDSTR"
+Keywords<-1> = "FIX"
+Keywords<-1> = "FLUSH"
+Keywords<-1> = "FMT"
+Keywords<-1> = "FMTDP"
+Keywords<-1> = "FMTS"
+Keywords<-1> = "FMTSDP"
+Keywords<-1> = "FMUL"
+Keywords<-1> = "FOLD"
+Keywords<-1> = "FOLDDP"
+Keywords<-1> = "FOOTING"
+Keywords<-1> = "FOR"
+Keywords<-1> = "FORMLIST"
+Keywords<-1> = "FROM"
+Keywords<-1> = "FSUB"
+Keywords<-1> = "FUNCTION"
+Keywords<-1> = "GES"
+Keywords<-1> = "GET"
+Keywords<-1> = "GETLIST"
+Keywords<-1> = "GETLOCALE"
+Keywords<-1> = "GETREM"
+Keywords<-1> = "GETX"
+Keywords<-1> = "GOSUB"
+Keywords<-1> = "GOTO"
+Keywords<-1> = "GROUP"
+Keywords<-1> = "GROUPSTORE"
+Keywords<-1> = "GTS"
+Keywords<-1> = "HEADING"
+Keywords<-1> = "HUSH"
+Keywords<-1> = "ICHECK"
+Keywords<-1> = "ICONV"
+Keywords<-1> = "ICONVS"
+Keywords<-1> = "IF"
+Keywords<-1> = "IFS"
+Keywords<-1> = "ILPROMPT"
+Keywords<-1> = "IN"
+Keywords<-1> = "INDEX"
+Keywords<-1> = "INDEXS"
+Keywords<-1> = "INDICES"
+Keywords<-1> = "INMAT"
+Keywords<-1> = "INPUT"
+Keywords<-1> = "INPUTCLEAR"
+Keywords<-1> = "INPUTDISP"
+Keywords<-1> = "INPUTDP"
+Keywords<-1> = "INPUTERR"
+Keywords<-1> = "INPUTIF"
+Keywords<-1> = "INPUTNULL"
+Keywords<-1> = "INPUTTRAP"
+Keywords<-1> = "INS"
+Keywords<-1> = "INSERT"
+Keywords<-1> = "INT"
+Keywords<-1> = "ISNULL"
+Keywords<-1> = "ISNULLS"
+Keywords<-1> = "ISOLATION"
+Keywords<-1> = "ITYPE"
+Keywords<-1> = "KEYEDIT"
+Keywords<-1> = "KEYEXIT"
+Keywords<-1> = "KEYIN"
+Keywords<-1> = "KEYTRAP"
+Keywords<-1> = "LEFT"
+Keywords<-1> = "LEN"
+Keywords<-1> = "LENDP"
+Keywords<-1> = "LENS"
+Keywords<-1> = "LENSDP"
+Keywords<-1> = "LES"
+Keywords<-1> = "LET"
+Keywords<-1> = "LEVEL"
+Keywords<-1> = "LIT"
+Keywords<-1> = "LN"
+Keywords<-1> = "LOCALEINFO"
+Keywords<-1> = "LOCATE"
+Keywords<-1> = "LOCK"
+Keywords<-1> = "LOCKED"
+Keywords<-1> = "LOOP"
+Keywords<-1> = "LOWER"
+Keywords<-1> = "LTS"
+Keywords<-1> = "MAT"
+Keywords<-1> = "MATBUILD"
+Keywords<-1> = "MATCH"
+Keywords<-1> = "MATCHES"
+Keywords<-1> = "MATCHFIELD"
+Keywords<-1> = "MATPARSE"
+Keywords<-1> = "MATREAD"
+Keywords<-1> = "MATREADL"
+Keywords<-1> = "MATREADU"
+Keywords<-1> = "MATWRITE"
+Keywords<-1> = "MATWRITEU"
+Keywords<-1> = "MAXIMUM"
+Keywords<-1> = "MINIMUM"
+Keywords<-1> = "MOD"
+Keywords<-1> = "MODS"
+Keywords<-1> = "MULS"
+Keywords<-1> = "NAP"
+Keywords<-1> = "NEG"
+Keywords<-1> = "NEGS"
+Keywords<-1> = "NES"
+Keywords<-1> = "NEXT"
+Keywords<-1> = "NOBUF"
+Keywords<-1> = "NOT"
+Keywords<-1> = "NOTS"
+Keywords<-1> = "NULL"
+Keywords<-1> = "NUM"
+Keywords<-1> = "NUMS"
+Keywords<-1> = "OCONV"
+Keywords<-1> = "OCONVS"
+Keywords<-1> = "OFF"
+Keywords<-1> = "ON"
+Keywords<-1> = "OPEN"
+Keywords<-1> = "OPENCHECK"
+Keywords<-1> = "OPENDEV"
+Keywords<-1> = "OPENPATH"
+Keywords<-1> = "OPENSEQ"
+Keywords<-1> = "OR"
+Keywords<-1> = "ORS"
+Keywords<-1> = "OSBREAD"
+Keywords<-1> = "OSWRITE"
+Keywords<-1> = "OSCLOSE"
+Keywords<-1> = "OSOPEN"
+Keywords<-1> = "OSREAD"
+Keywords<-1> = "OSWRITE"
+Keywords<-1> = "OUT."
+Keywords<-1> = "PAGE"
+Keywords<-1> = "PAGE"
+Keywords<-1> = "PERFORM"
+Keywords<-1> = "PRECISION"
+Keywords<-1> = "PRINT"
+Keywords<-1> = "PRINTER"
+Keywords<-1> = "PRINTERR"
+Keywords<-1> = "PROCREAD"
+Keywords<-1> = "PROCWRITE"
+Keywords<-1> = "PROGRAM"
+Keywords<-1> = "PROMPT"
+Keywords<-1> = "PWR"
+Keywords<-1> = "QUOTE"
+Keywords<-1> = "RAISE"
+Keywords<-1> = "RANDOMIZE"
+Keywords<-1> = "READ"
+Keywords<-1> = "READBLK"
+Keywords<-1> = "READL"
+Keywords<-1> = "READLIST"
+Keywords<-1> = "READLOCKL"
+Keywords<-1> = "READLOCKU"
+Keywords<-1> = "READNEXT"
+Keywords<-1> = "READSELECT"
+Keywords<-1> = "READSEQ"
+Keywords<-1> = "READT"
+Keywords<-1> = "READU"
+Keywords<-1> = "READV"
+Keywords<-1> = "READVL"
+Keywords<-1> = "READVU"
+Keywords<-1> = "REAL"
+Keywords<-1> = "RECORDLOCK"
+Keywords<-1> = "RECORDLOCKED"
+Keywords<-1> = "RECORDLOCKU"
+Keywords<-1> = "RELEASE"
+Keywords<-1> = "REM"
+Keywords<-1> = "REMOVE"
+Keywords<-1> = "REPEAT"
+Keywords<-1> = "REPLACE"
+Keywords<-1> = "RETURN"
+Keywords<-1> = "REUSE"
+Keywords<-1> = "REVREMOVE"
+Keywords<-1> = "REWIND"
+Keywords<-1> = "RIGHT"
+Keywords<-1> = "RND"
+Keywords<-1> = "ROLLBACK"
+Keywords<-1> = "RPC.CALL"
+Keywords<-1> = "RPC.CONNECT"
+Keywords<-1> = "RPC.DISCONNECT"
+Keywords<-1> = "SADD"
+Keywords<-1> = "SCMP"
+Keywords<-1> = "SDIV"
+Keywords<-1> = "SEEK"
+Keywords<-1> = "SEEK"
+Keywords<-1> = "SELECT"
+Keywords<-1> = "SELECT."
+Keywords<-1> = "SELECTE"
+Keywords<-1> = "SELECTINDEX"
+Keywords<-1> = "SELECTINFO"
+Keywords<-1> = "SEND"
+Keywords<-1> = "SENTENCE"
+Keywords<-1> = "SEQ"
+Keywords<-1> = "SEQS"
+Keywords<-1> = "SET"
+Keywords<-1> = "SETLOCALE"
+Keywords<-1> = "SETREM"
+Keywords<-1> = "SETTING"
+Keywords<-1> = "SIN"
+Keywords<-1> = "SINH"
+Keywords<-1> = "SLEEP"
+Keywords<-1> = "SMUL"
+Keywords<-1> = "SOUNDEX"
+Keywords<-1> = "SPACE"
+Keywords<-1> = "SPACES"
+Keywords<-1> = "SPLICE"
+Keywords<-1> = "SQRT"
+Keywords<-1> = "SQUOTE"
+Keywords<-1> = "SSELECT"
+Keywords<-1> = "SSUB"
+Keywords<-1> = "START"
+Keywords<-1> = "STATUS"
+Keywords<-1> = "STEP"
+Keywords<-1> = "STOP"
+Keywords<-1> = "STORAGE"
+Keywords<-1> = "STR"
+Keywords<-1> = "STRS"
+Keywords<-1> = "SUBR"
+Keywords<-1> = "SUBROUTINE"
+Keywords<-1> = "SUBS"
+Keywords<-1> = "SUBSTRINGS"
+Keywords<-1> = "SUM"
+Keywords<-1> = "SUMMATION"
+Keywords<-1> = "SYSTEM"
+Keywords<-1> = "TABSTOP"
+Keywords<-1> = "TAN"
+Keywords<-1> = "TANH"
+Keywords<-1> = "TERMINFO"
+Keywords<-1> = "THEN"
+Keywords<-1> = "TIME"
+Keywords<-1> = "TIMEDATE"
+Keywords<-1> = "TIMEOUT"
+Keywords<-1> = "TO"
+Keywords<-1> = "TPARM"
+Keywords<-1> = "TPRINT"
+Keywords<-1> = "TRANS"
+Keywords<-1> = "TRANSACTION"
+Keywords<-1> = "TRIM"
+Keywords<-1> = "TRIMB"
+Keywords<-1> = "TRIMBS"
+Keywords<-1> = "TRIMF"
+Keywords<-1> = "TRIMFS"
+Keywords<-1> = "TRIMS"
+Keywords<-1> = "TTYCTL"
+Keywords<-1> = "TTYGET"
+Keywords<-1> = "TTYSET"
+Keywords<-1> = "UNASSIGNED"
+Keywords<-1> = "UNICHAR"
+Keywords<-1> = "UNICHARS"
+Keywords<-1> = "UNISEQ"
+Keywords<-1> = "UNISEQS"
+Keywords<-1> = "UNLOCK"
+Keywords<-1> = "UNTIL"
+Keywords<-1> = "UPCASE"
+Keywords<-1> = "UPRINT"
+Keywords<-1> = "WEOF"
+Keywords<-1> = "WEOFSEQ"
+Keywords<-1> = "WHILE"
+Keywords<-1> = "WRITE"
+Keywords<-1> = "WRITEBLK"
+Keywords<-1> = "WRITELIST"
+Keywords<-1> = "WRITESEQ"
+Keywords<-1> = "WRITESEQF"
+Keywords<-1> = "WRITET"
+Keywords<-1> = "WRITEU"
+Keywords<-1> = "WRITEV"
+Keywords<-1> = "WRITEVU"
+Keywords<-1> = "XLATE"
+Keywords<-1> = "XTD"
+Return
+*---------------------------------------------------------------------------
+* InitReplaces
+*---------------------------------------------------------------------------
+InitReplaces:
+* Set up standard replacements
+StdConvs = "@FM" ; StdConvs<2,-1> = "CHAR(254)"
+StdConvs<1,-1> = "@VM" ; StdConvs<2,-1> = "CHAR(253)"
+StdConvs<1, -1> = "@SVM" ; StdConvs<2,-1> ="CHAR(252)"
+StdConvs<1, -1> = "@DATE" ; StdConvs<2,-1> ="DATE()"
+StdConvs<1, -1> = "@TIME" ; StdConvs<2,-1> ="TIME()"
+StdConvs<1, -1> = "@USERNO" ; StdConvs<2,-1> = "FIELD(OCONV('','U50BB'),' ',1,1)"
+StdConvs<1, -1> = "@WHO" ; StdConvs<2,-1> ="FIELD(OCONV('','U50BB'),' ',2,1)"
+StdConvs<1, -1> = "@CRTWIDE" ; StdConvs<2,-1> = "SYSTEM(2)"
+StdConvs<1, -1> = "@CRTHIGH" ; StdConvs<2,-1> = "SYSTEM(3)"
+StdConvs<1, -1> = "@TRUE" ; StdConvs<2,-1> = "1"
+StdConvs<1, -1> = "@FALSE" ; StdConvs<2,-1> ="0"
+Return
+*---------------------------------------------------------------------------
+* SetFlags
+*---------------------------------------------------------------------------
+SetFlags:
+NeedBind = @False
+ConvCase = @True
+inserts = ""
+ReplaceList = ""
+NeedEquates = @True
+begin case
+Case Flavour = FLAVOUR.JBASE
+ConvCase = @True
+ReplaceList = StdConvs
+Global<-1> = ",":" OUT. >":@VM:" CAPTURING"
+Global<-1> = ",":" SELECT. >":@VM:" RTNLIST"
+Global<-1> = ",":" SELECT. <":@VM:" PASSLIST"
+case Flavour = FLAVOUR.UNIDATA
+ConvCase = @True
+ReplaceList<1,-1> = "KEYIN"
+ReplaceList<2,-1> = "IN"
+ReplaceList<1,-1> = "READLIST"
+ReplaceList<2,-1> = "READSELECT"
+Global<-1> = ",":" OUT. >":@VM:" CAPTURING"
+Global<-1> = ",":" SELECT. >":@VM:" RTNLIST"
+Global<-1> = ",":" SELECT. <":@VM:" PASSLIST"
+case Flavour = FLAVOUR.D3
+ConvCase = @False
+NeedBind = @True
+BindIncludes = @True
+NeedEquates = @True
+inserts = "$OPTIONS EXT"
+ReplaceList = StdConvs
+ReplaceList<1,-1> = "@SELECTED"
+ReplaceList<2,-1> = "SYSTEM(11)"
+Global = ''
+Global<-1> = ",":" OUT. >":@VM:" CAPTURING"
+Global<-1> = ",":" SELECT. >":@VM:" RTNLIST"
+Global<-1> = ",":" SELECT. <":@VM:" PASSLIST"
+case Flavour = FLAVOUR.UNIVERSE
+ConvCase = @False
+NeedEquates = @False
+case Flavour = FLAVOUR.MVBASE
+ConvCase = @True
+NeedBind = @True
+BindIncludes = @True
+ReplaceList = StdConvs
+ReplaceList<1,-1> = "@SELECTED"
+ReplaceList<2,-1> = "SYSTEM(11)"
+Case Flavour = FLAVOUR.QM
+Global<-1> = ",":" OUT. >":@VM:" CAPTURING"
+Global<-1> = ",":" SELECT. >":@VM:" RTNLIST"
+Global<-1> = ",":" SELECT. <":@VM:" PASSLIST"
+case Flavour = FLAVOUR.MVON
+ConvCase = @False
+NeedEquates = @False
+ReplaceList = StdConvs
+Case Flavour = FLAVOUR.HSBC
+ConvCase = @True
+UpCaseAll = @True
+NeedEquates = @False
+ReplaceList = ''
+ReplaceList<1> = '@FM,@VM,@SVM,@TRUE,@FALSE,CRT'
+ReplaceList<2> = 'AM,VM,SM,TRUE,FALSE,DISPLAY'
+Convert ',' To @VM In ReplaceList
+ConvLabels = @True
+StartLabel = 8000
+IncrLabel = 1000
+end case
+If AlwaysBind Then BindIncludes = @True
+If AlwaysEquate Then NeedEquates = @True
+If NoEquate Then NeedEquates = @False
+If NoBind Then BindIncludes = @False
+Return
+*---------------------------------------------------------------------------
+* BOUND Includes
+*---------------------------------------------------------------------------
+sentence.h:
+ASentence = ""
+ASentence = @Sentence
+RETURN
+args.h:
+GoSub sentence.h
+ArgList = ""
+GoSub sentence.h
+LIx = Index(ASentence,ProgramName,1)
+If LIx = 0 Then
+LIx = Index(OConv(ASentence,"MCU"), OConv(ProgramName,'MCU'),1)
+End
+If LIx then
+ASentence = ASentence[LIx+Len(ProgramName)+1,Len(ASentence)]
+End Else
+ASentence = Field(ASentence," ",2,Len(ASentence))
+End
+Loop
+ASentence = Trim(ASentence," ","B")
+Until ASentence = "" Do
+Begin Case
+Case ASentence[1,1] = "'"
+ArgList<-1> = Field(ASentence,"'",2,1)
+ASentence = Field(ASentence, "'",3, Len(ASentence))
+Case ASentence[1,1] = '"'
+ArgList<-1> = Field(ASentence,'"',2,1)
+ASentence = Field(ASentence,'"',3, Len(ASentence))
+Case 1
+ArgList<-1> = Field(ASentence,' ',1,1)
+ASentence = Field(ASentence,' ', 2, Len(ASentence))
+End Case
+Repeat
+Return
+readlist.h:
+List = ""
+If ListName = "" Then
+ReadList List Else List = ""
+End Else
+ReadList List From ListName Else List = ""
+End
+Return
+tclext.h:
+ItemList = ""
+Options = ""
+GoSub args.h
+LArgNo = 1
+FileName = ArgList<LArgNo>
+If FileName = "" Then
+Crt "File ": ; Input FileName
+If FileName = "" then Return
+End
+Open FileName To FL Else
+Crt "Cannot Open ":FileName
+FileName = ""
+Return
+End
+Loop
+LArgNo = LArgNo + 1
+Item = ArgList<LArgNo>
+Until Item = "" Do
+If Item[1,1] = "/" Or Item[1,1] = "-" Then
+LTestOption = OConv(Item[2,99],"MCU")
+Locate LTestOption In OptionList<1> Setting LPos Then
+LExpected = OptionList<2,LPos>
+For LI = 1 To LExpected
+LArgNo = LArgNo + 1
+Item<-1> = ArgList<LArgNo>
+Next LI
+Options<-1> = Item[2,Len(Item)]
+End Else
+FileName = ""
+End
+End Else
+ItemList<-1> = Item
+End
+Repeat
+Begin Case
+Case ItemList = "" And System(11)
+ListName = ""
+GoSub readlist.h
+ItemList = List
+Case ItemList = ""
+Crt "Item ": ; Input ItemList
+Case ItemList = "*"
+Perform "SELECT ":FileName
+ListName = ""
+GoSub readlist.h
+ItemList = List
+End Case             
+Return
+$OPTIONS PICK
+Split:
+If UnAssigned(WhiteSpace) then WhiteSpace = ""
+If UnAssigned(Delims) then Delims = ""
+If WhiteSpace = "" then
+WhiteSpace = " ":TAB:CR:LF:@fm:@vm:@svm
+End
+If Delims = "" then
+Delims = "'":'"\'
+Delims<2> = Delims
+End
+Words = ""
+SplitLength = Len(SplitLine)
+If Not(SplitLength) Then
+RETURN
+End
+SplitCnt = 1
+IntSplitLine = SplitLine
+SplitDone = False
+NoWhiteSpace = Len(WhiteSpace)
+NoDelims = Len(Delims<1>)
+Loop
+Until SplitDone Do
+GoSub GetSplitWord
+Repeat
+RETURN
+GetSplitWord:
+Loop 
+While (Index(WhiteSpace, IntSplitLine[1,1],1)) And IntSplitLine <> ""
+IntSplitLine = IntSplitLine[2,HUGE]
+Repeat
+SplitIndex = Index(Delims<1>, IntSplitLine[1,1],1)
+Begin Case
+Case IntSplitLine = ""
+SplitDone = True
+Return
+Case SplitIndex
+If Delims<2>[SplitIndex,1] = "" then
+Word = IntSplitLine[1,1]
+IntSplitLine = IntSplitLine[2, HUGE]
+End Else
+Word = IntSplitLine[1,1]: Field(IntSplitLine[2,HUGE],Delims<2>[SplitIndex,1],1,1):Delims<2>[SplitIndex,1]
+IntSplitLine = IntSplitLine[Len(Word)+1,HUGE]
+End
+Case 1
+SplitIndex= Len(IntSplitLine)+1
+For SplitI = 1 To NoWhiteSpace
+SplitIndex2 = Index(IntSplitLine,WhiteSpace[SplitI,1],1)
+If SplitIndex2 And (SplitIndex2 < SplitIndex) Then SplitIndex = SplitIndex2
+Next SplitI
+For SplitI = 1 To NoDelims
+SplitIndex2 = Index(IntSplitLine,Delims[SplitI,1],1)
+If SplitIndex2 And (SplitIndex2 < SplitIndex) Then SplitIndex = SplitIndex2
+Next SplitI
+Word = IntSplitLine[1, SplitIndex-1]
+IntSplitLine = IntSplitLine[Len(Word)+1,HUGE]
+End Case
+Words<-1> = Word
+Return
+RETURN
+Return
+*---------------------------------------------------------------------------
+* USage
+*---------------------------------------------------------------------------
+Usage:
+Crt
+Crt "PC"
+Crt "=="
+Crt
+Crt "BASIC Precompiler"
+Crt
+Crt "Syntax:"
+Crt "-------"
+Crt
+Crt "PC filename [{item [item..]|*}] /flavour /options"
+Crt
+Crt "Flavours:"
+Crt
+Crt "UNIVERSE UNIDATA JBASE D3 MVBASE QM MVON"
+Crt
+Crt "Options:"
+Crt
+Crt "TO target                    Sets name of target file to write"
+Crt "BIND                         Always bind include items"
+Crt "EQUATE                       Process equates"
+Crt "NOBIND                       Override binding"
+Crt "NOEQUATE                     Never process equates"
+Crt "CORTEX                       Handle Cortex includes"
+Crt
+Crt "Example:"
+Crt
+Crt "PC blutil.source PC /TO blutil.bp,unidata /UNIDATA /BIND /EQUATE"
+Crt
+RETURN
+end

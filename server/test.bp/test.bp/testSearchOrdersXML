@@ -1,0 +1,25 @@
+PROGRAM
+Crt 'Order Id : ':
+Input OrderId
+
+Crt 'Client Id : ':
+Input ClientId
+
+Crt 'Start Date : ':
+Input StartDate
+Crt 'End Date : ':
+Input EndDate
+
+SearchData = OrderId: @FM : ClientId : @FM : StartDate : @FM : EndDate
+OrderList = ''
+ErrText = ''
+
+Call u2_searchOrdersXML( SearchData, OrderList, ErrText)
+
+Crt '[ErrText]'
+Crt ErrText
+
+Crt '[OrderList]'
+Crt OrderList
+
+STOP

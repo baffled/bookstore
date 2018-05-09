@@ -1,0 +1,49 @@
+PROGRAM fixTaxRates
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_promos
+*  @@Description : apply any current promotions
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$INCLUDE books.bp u2_common.h
+$INCLUDE books.inc U2_ORDERS.h
+$INCLUDE books.inc U2_BOOKS.h
+$INCLUDE books.inc U2_PROMOTIONS.h
+$INCLUDE books.inc U2_SALESTAX.h
+Fin = @FALSE
+SELECT F.ORDERS
+LOOP
+READNEXT Id ELSE Fin = @TRUE
+UNTIL Fin DO
+READ OrderRec FROM F.ORDERS, Id THEN
+Dc = DCOUNT(OrderRec<U2.ORDERS.BOOK.ID>,@VM)
+FOR I = 1 TO Dc
+TaxCode = OrderRec<U2.ORDERS.TAX.CODE,I>
+READV Rate FROM F.SALESTAX, TaxCode, U2.SALESTAX.RATE THEN
+OrderRec<U2.ORDERS.TAX.RATE,I> = Rate
+END
+NEXT
+WRITE OrderRec ON F.ORDERS, Id
+END
+REPEAT
+CRT 'Completed'
+

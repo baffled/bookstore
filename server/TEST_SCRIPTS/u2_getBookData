@@ -1,0 +1,93 @@
+! Test to get bookdata from the SAFE file
+!
+! Tests for u2_getBookData, u2_releaseBook, u2_getBookImage
+$INCLUDE books.inc U2_BOOKDATA.h
+
+GoSub Init
+GoSub ShouldGetData
+GoSub ShouldGiveErrorWithMissingKey
+GOSub ShouldGetImage
+GoSub ShouldLockAndReleaseTitle
+
+STOP
+
+Init:
+
+   Open 'U2_BOOKS' To U2_BOOKS Else
+     Crt 'Cannot open U2_BOOKS'
+     STOP
+   End
+   
+   RETURN
+   
+CallSub:
+
+  BookData = ''
+  ErrText = ''
+   Call u2_getBookData(BookId, LockFlag, BookData, ErrText)
+   
+Return
+
+ShouldGetData:
+  Announce 'Should get the base data'
+  
+  BookId = 220
+  LockFlag = @False
+  GoSub CallSub
+  
+  AssertIs "Should be Chocolat", BookData<U2_BOOKDATA.TITLE>,'Chocolat'
+  AssertIs "Should have author", BookData<U2_BOOKDATA.AUTHOR_NAME>,'Joanna Harris'
+  AssertIs "Should have ISBN",BookData<U2_BOOKDATA.ISBN>,'1840323345'
+  AssertIs "Should have DEPT", BookData<U2_BOOKDATA.DEPT>,'ADULT'
+  AssertIs "Should have GENRE", BookData<U2_BOOKDATA.GENRE>,'FICTION'
+  AssertIs "Should have MEDIA",BookData<U2_BOOKDATA.MEDIA>,'CD'
+  AssertCont "Should have PUBLISHER",BookData<U2_BOOKDATA.PUBLISHER_NAME>,'Hodder'
+  AssertIs "Should have SALE PRICE",BookData<U2_BOOKDATA.SALE_PRICE>,'1499'
+  AssertIs "Should have STOCK LEVEL",BookData<U2_BOOKDATA.STOCK_LEVEL>,'1'
+  AssertIs "Should have MIN ORDER",BookData<U2_BOOKDATA.MIN_ORDER>,'5'
+  AssertIs "Should have TAX CODE",BookData<U2_BOOKDATA.TAX_CODE>,'N'
+  AssertIs "Should have SUPPLIER",BookData<U2_BOOKDATA.SUPPLIER_NAME>,'PEPPER PRESS'
+  AssertIs "Should have PURCH PRICE",BookData<U2_BOOKDATA.PURCH_PRICE>,'499'
+  AssertFull "Should have LONG DESCRIPTION",BookData<U2_BOOKDATA.LONG_DESCRIPTION>
+  
+Return
+
+ShouldGetImage:
+
+Announce 'Should get the book image'
+  ImageData = ''
+  BookId = 220
+  Call u2_getBookImage(BookId, ImageData, ErrText)
+  AssertFull "Should have image", ImageData
+  AssertEmpty "Should have no error", ErrText
+  
+Return
+
+ShouldGiveErrorWithMissingKey:
+   Announce "Should return error with a missing key"
+   BookId = -1
+   LockFlag = @False
+   GoSub CallSub
+   AssertEmpty "Should have no data", BookData
+   AssertFull "Should have an error", ErrText
+Return
+
+ShouldLockAndReleaseTitle:
+  Announce 'Should lock and release title'
+  
+ 
+  BookId = 220
+  LockFlag = @True
+  GoSub CallSub
+  
+  Result = RecordLocked(U2_BOOKS, BookId)  
+  Assert "Should have lock set", Result <> 0
+  
+  Call u2_releaseBook(BookId, ErrText)
+  Result = RecordLocked(U2_BOOKS, BookId)
+  
+  Assert "Should have lock released", Result = 0
+  
+  Return
+  
+

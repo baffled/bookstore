@@ -1,0 +1,36 @@
+!SCRIPT MAKETABLE %f %i 
+* ---------------------------------------------------------------------------
+*  @@Name        : U2_PERSONNEL
+*  @@Description : Table Definition for U2_PERSONNEL
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO{}
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Version Stamp
+!V!
+* ---------------------------------------------------------------------------
+$INCLUDE books.tables DEFAULT
+
+BEGIN TABLE U2_PERSONNEL
+TYPE 18
+MODULO 503
+SEPARATION 2
+   FIELD ID         FNO 0 COLHEAD \Id\ LEN 3 JUST L
+   FIELD SURNAME    FNO 1 COLHEAD \Surname\ LEN 20 JUST L
+   FIELD FORENAME   FNO 2 COLHEAD \Forename\ LEN 20 JUST L
+   FIELD JOB_TITLE  FNO 3 COLHEAD \Job_title\ LEN 20 JUST L
+   FIELD MANAGER    FNO 4 COLHEAD \Manager\ LEN 3 JUST L
+   
+   PHRASE ALL_FIELDS \ID SURNAME FORENAME JOB_TITLE MANAGER\
+   PHRASE DATA_FIELDS \ID SURNAME FORENAME JOB_TITLE MANAGER\
+ENDDEFN

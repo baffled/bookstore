@@ -1,0 +1,44 @@
+$IFDEF UNDATA
+$BASICTYPE "P"
+$ENDIF
+SUBROUTINE u2_visualize(InData, OutData, ErrText)
+*--------------------------------------------------------------------------
+*  @@Name        : u2_visualize 
+*  @@Description : return sales charts using Google Visualization
+*--------------------------------------------------------------------------
+*  @@INFO{
+*   This generates an HTML page containing the necessary scripts to run
+*   sales charts through Google Visualization.
+*
+*   Obviously it requires an internet connection.
+*  }
+*--------------------------------------------------------------------------
+$IFDEF UNIVERSE
+$OPTIONS PICK
+$ENDIF                                      
+
+OutData = ''
+ErrText = ''
+
+ Open 'U2_PARAMS' To U2_PARAMS Else
+  ErrText = 'Cannot open the U2_PARAMS File'
+  RETURN
+End
+
+Read Template From U2_PARAMS, 'CHART_TEMPLATE' Else
+   ErrText = 'Cannot read the chart template'
+   RETURN
+End
+
+Call u2_getMonthlySales(1, OData, ErrText)        
+If ErrText <> '' Then
+   RETURN
+End
+
+Template = Change(Template,'$(CHART_TOTALS)',OData)
+
+
+OutData = Change(Template, @FM, Char(13):Char(10))
+RETURN
+
+

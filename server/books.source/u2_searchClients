@@ -1,0 +1,147 @@
+$IFDEF UNIDATA
+$BASICTYPE "P"
+$ENDIF
+       SUBROUTINE u2_searchClients( SearchData, ClientList, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_searchClients
+*  @@Description : Search for customers using a traditional selection
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$IFDEF UNIVERSE
+$OPTIONS PICK
+$ENDIF
+$INCLUDE u2_common.h
+$INCLUDE books.inc U2_CLIENTS.h
+
+       EQU SEARCH.EQUALS   To 0
+       EQU SEARCH.BEGINS   To 1
+       EQU SEARCH.CONTAINS To 2
+       EQU SEARCH.ENDS     To 3
+       EQU SEARCH.SAID     To 4
+
+       DEFFUN u2_escapeXML( value )
+
+       ClientList = ''
+       ErrText = ''
+
+       Surname = Oconv(SearchData<1>,"MCU")
+       SurnameSearchType = SearchData<2>
+       Forename = OConv(SearchData<3>,"MCU")
+       ForenameSearchType = SearchData<4>
+
+
+$IFDEF UNIVERSE
+       Query = 'SSELECT U2_CLIENTS'
+$ELSE
+       Query = 'sselect U2_CLIENTS'
+$ENDIF
+
+       Query := ' BY SURNAME BY FORENAME'
+       WithClause = ''
+      If Surname <> '' Then
+             Begin Case
+                Case SurnameSearchType = SEARCH.EQUALS
+                   Op = '='
+                   Value = Surname
+                Case SurnameSearchType = SEARCH.BEGINS
+                   Op = 'LIKE'
+                   Value = Surname:"..."
+                Case SurnameSearchType = SEARCH.CONTAINS
+                   Op = 'LIKE'
+                   Value = "...":Surname:"..."
+                Case SurnameSearchType = SEARCH.ENDS
+                   Op = 'LIKE'
+                   Value = "...":Surname
+
+                Case SurnameSearchType = SEARCH.SAID
+                   Op = 'SAID'
+                   Value = Surname
+
+             End Case
+
+             WithClause = \ WITH U_SURNAME \:Op:\ "\:Value:\"\
+          End
+
+          If Forename <> '' then
+
+             If WithClause <> '' Then WithClause := ' AND '
+             Begin Case
+                Case ForenameSearchType = SEARCH.EQUALS
+                   Op = '='
+                   Value = Forename
+                Case ForenameSearchType = SEARCH.BEGINS
+                   Op = 'LIKE'
+                   Value = Forename:"..."
+                Case ForenameSearchType = SEARCH.CONTAINS
+                   Op = 'LIKE'
+                   Value = "...":Forename:"..."
+                Case ForenameSearchType = SEARCH.ENDS
+                   Op = 'LIKE'
+                   Value = "...":Forename
+
+                Case ForenameSearchType = SEARCH.SAID
+                   Op = 'SAID'
+                   Value = Forename
+
+             End Case
+
+
+             WithClause := \ WITH U_FORENAME \:Op:\ "\:Value:\"\
+          End
+
+       Query := WithClause
+
+       ClientList = '<?xml version="1.0" ?>'
+       ClientList<-1> = '<ROOT>'
+       NoClients = 0
+       Done = @False
+       Perform Query
+       Loop
+          ReadNext ClientId Else Done = @True
+       Until Done Do
+          GoSub AddClient
+       Repeat
+       ClientList<-1> = '</ROOT>'
+       RETURN
+
+AddClient:   
+       Read ClientRec From F.CLIENTS, ClientId Else
+          Return
+       End
+
+       NoClients += 1                                                             
+       ClientList<-1> = '<U2_CLIENTS>'
+       ClientList<-1> = '<ID>':ClientId:'</ID>'
+       ClientList<-1> = '<FORENAME>' : u2_escapeXML(ClientRec<U2_CLIENTS.FORENAME>) : '</FORENAME>'
+       ClientList<-1> = '<SURNAME>':u2_escapeXML(ClientRec<U2_CLIENTS.SURNAME>):'</SURNAME>'
+       ClientList<-1> = '<DELIM_ADDRESS>':Change(u2_escapeXML(ClientRec<U2_CLIENTS.ADDRESS>),@VM,","):'</DELIM_ADDRESS>'
+       ClientList<-1> = '<JOIN_DATE>':OConv(ClientRec<U2_CLIENTS.JOIN_DATE>,"D4/"):'</JOIN_DATE>'
+       ClientList<-1> = '<ACCOUNT_STATUS>':ClientRec<U2_CLIENTS.ACCOUNT_STATUS>:'</ACCOUNT_STATUS>'
+       ClientList<-1> = '</U2_CLIENTS>'
+
+       Return
+
+
+
+
+

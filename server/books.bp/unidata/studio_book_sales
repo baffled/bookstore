@@ -1,0 +1,138 @@
+SUBROUTINE studio_book_sales(Genres, GenreTotals,Depts, DeptTotals,Months, MonthlyTotals)
+* ---------------------------------------------------------------------------
+*  @@Name        : bookSales
+*  @@Description : Return sales charts for book sales
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$INCLUDE studio.inc sxvml.h
+$INCLUDE books.inc U2_BOOKS.h
+$INCLUDE books.inc U2_ORDERS.h
+OPEN 'U2_BOOKS' TO F.BOOKS ELSE
+CRT 'Cannot open U2_BOOKS'
+STOP
+END
+OPEN 'U2_ORDERS' TO F.ORDERS ELSE
+CRT 'Cannot open U2_ORDERS'
+STOP
+END
+GOSUB Main
+CONVERT @FM TO ',' IN Genres
+* test
+GenreTotals = GenreTotals<1> ;* split adult/junior
+CONVERT @VM TO ',' IN GenreTotals
+CONVERT @FM TO ',' IN Depts
+CONVERT @VM TO ',' IN DeptTotals
+CONVERT @VM TO ',' IN Years
+Months = "Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec"
+* for testing
+MonthlyTotals = MonthlyTotals<1> ;* split 3 years
+Dc = DCOUNT(MonthlyTotals<1>,@FM)
+FOR Z = 1 TO Dc
+FOR J = 1 TO 12
+IF MonthlyTotals<Z,J> = '' THEN MonthlyTotals<Z,J> = 0
+NEXT
+NEXT
+CONVERT @FM:@VM TO ';,' IN MonthlyTotals
+RETURN
+*---------------------------------------------------------------------------
+* Main
+*---------------------------------------------------------------------------
+Main:
+Depts = ''
+BookTotals = ''
+Genres = ''
+GenreTotals = ''
+DeptTotals = ''
+Months = ''
+Years = ''
+MonthlyTotals = ''
+BookDepts = ''
+BookGenres = ''
+GOSUB GetGenres
+GOSUB Build
+RETURN
+*---------------------------------------------------------------------------
+* AddOrder
+*---------------------------------------------------------------------------
+AddOrder:
+OrderDate = Id["*",1,1]
+Month = OCONV(OrderDate, "DM")
+Year = OCONV(OrderDate,"DY4")
+TotalQty = SUM(OrderRec<U2.ORDERS.QTY>)
+* add this into the monthly figures
+LOCATE Year IN Years BY "AR" SETTING Pos ELSE
+INS Year BEFORE Years<Pos>
+INS "" BEFORE MonthlyTotals<Pos>
+END
+MonthlyTotals<Pos,Month> += TotalQty
+* Now go through each one working out the dept and genre
+NoTitles = DCOUNT(OrderRec<U2.ORDERS.BOOK.ID>,@VM)
+FOR I = 1 TO NoTitles
+BookId = OrderRec<U2.ORDERS.BOOK.ID, I>
+Genre = BookGenres<BookId>
+Dept = BookDepts<BookId>
+Qty = OrderRec<U2.ORDERS.QTY, I>
+LOCATE Genre IN Genres BY "AL" SETTING Pos ELSE
+INS Genre BEFORE Genres<Pos>
+INS 0 BEFORE GenreTotals<1,Pos>
+INS 0 BEFORE GenreTotals<2,Pos>
+END
+IF Dept = "ADULT" THEN
+DeptTotals<1,1> += Qty
+GenreTotals<1,Pos> += Qty
+END ELSE
+DeptTotals<1,2> += Qty
+GenreTotals<2,Pos> += Qty
+END
+NEXT
+RETURN
+*---------------------------------------------------------------------------
+* Build
+*---------------------------------------------------------------------------
+Build:
+SELECT F.ORDERS
+Fin = @FALSE
+LOOP
+READNEXT Id ELSE Fin = @TRUE
+UNTIL Fin DO
+READ OrderRec FROM F.ORDERS, Id THEN
+GOSUB AddOrder
+END
+REPEAT
+RETURN
+*---------------------------------------------------------------------------
+* GetGenres
+*---------------------------------------------------------------------------
+GetGenres:
+SELECT F.BOOKS
+Fin = @FALSE
+LOOP
+READNEXT Id ELSE Fin = @TRUE
+UNTIL Fin DO
+READ BookRec FROM F.BOOKS, Id THEN
+BookGenres<Id> = BookRec<U2.BOOKS.GENRE>
+BookDepts<Id> = BookRec<U2.BOOKS.DEPT>
+END
+REPEAT
+RETURN       
+

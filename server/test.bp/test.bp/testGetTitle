@@ -1,0 +1,15 @@
+PROGRAM testGetTitle
+Crt 'Enter Book Id :':
+Input BookId
+If BookId = '' Then STOP
+Crt 'Locking (Y/N):':
+Input Locking
+LockFlag = (UpCase(TrimF(Locking))[1,1] = 'Y')
+BookData = ''
+ErrText = ''
+Call u2_getTitle(BookId, BookData, LockFlag, ErrText)
+Crt '[ErrText]=': ErrText
+Crt '[BookData]'
+Call testShowData(BookData)
+RETURN
+

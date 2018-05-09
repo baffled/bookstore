@@ -1,0 +1,93 @@
+SUBROUTINE u2_getBookData(BookId, LockFlag, BookData,  ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_GetBookData 
+*  @@Description : Assemble full details for a book title
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO{
+*     Note that prices are sent back in interal format (whole pence/cents)
+*     so that any conversion can take the locale of the client.
+*  }
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$OPTIONS PICK
+$INCLUDE books.source u2_common.h
+$INCLUDE books.inc U2_BOOKS.h
+$INCLUDE books.inc U2_AUTHORS.h
+$INCLUDE books.inc U2_PUBLISHERS.h
+$INCLUDE books.inc U2_BOOKDATA.h
+$INCLUDE books.inc U2_SALESTAX.h
+$INCLUDE books.inc U2_SUPPLIERS.h
+BookData = ''
+ErrText = ''
+Begin Case
+Case LockFlag
+ReadU BookRec From F.BOOKS, BookId Locked
+ErrText = 'This books is locked by another user'
+RETURN
+End Else
+ErrText = 'Cannot find the requested book'
+Release ;* Lock persists even if the record is not found
+RETURN
+End
+GoSub BuildData
+Case Not(LockFlag)
+Read BookRec From F.BOOKS, BookId Else
+ErrText = 'Cannot find the requested book'
+RETURN
+End
+GoSub BuildData
+End Case
+RETURN
+*---------------------------------------------------------------------------
+* BuildData
+*---------------------------------------------------------------------------
+BuildData:
+BookData<U2_BOOKDATA.TITLE> = BookRec<U2_BOOKS.TITLE>
+BookData<U2_BOOKDATA.AUTHOR_ID> = BookRec<U2_BOOKS.AUTHOR_ID>
+ReadV AuthorName From F.AUTHORS, BookRec<U2_BOOKS.AUTHOR_ID>, U2_AUTHORS.FULLNAME Else
+AuthorName = 'Unknown'
+End
+BookData<U2_BOOKDATA.AUTHOR_NAME> = AuthorName
+BookData<U2_BOOKDATA.ISBN> = BookRec<U2_BOOKS.ISBN>
+BookData<U2_BOOKDATA.DEPT> = BookRec<U2_BOOKS.DEPT>
+BookData<U2_BOOKDATA.GENRE> = BookRec<U2_BOOKS.GENRE>
+BookData<U2_BOOKDATA.MEDIA>= BookRec<U2_BOOKS.MEDIA>
+BookData<U2_BOOKDATA.PUBLISHER_ID> = BookRec<U2_BOOKS.PUBLISHER_ID>
+Read PubRec From F.PUBLISHERS, BookRec<U2_BOOKS.PUBLISHER_ID> Then
+BookData<U2_BOOKDATA.PUBLISHER_NAME> = PubRec<U2_PUBLISHERS.FULLNAME>
+End
+BookData<U2_BOOKDATA.SALE_PRICE> = BookRec<U2_BOOKS.SALE_PRICE>
+BookData<U2_BOOKDATA.STOCK_LEVEL>= BookRec<U2_BOOKS.STOCK_LEVEL>
+BookData<U2_BOOKDATA.MIN_ORDER>= BookRec<U2_BOOKS.MIN_ORDER>
+BookData<U2_BOOKDATA.ON_ORDER> = BookRec<U2_BOOKS.ON_ORDER>
+BookData<U2_BOOKDATA.RESERVED>= BookRec<U2_BOOKS.RESERVED>
+BookData<U2_BOOKDATA.TAX_CODE>= BookRec<U2_BOOKS.TAX_CODE>
+Read TaxRec From F.SALESTAX, BookRec<U2_BOOKS.TAX_CODE> Then
+BookData<U2_BOOKDATA.TAX_RATE> = TaxRec<U2_SALESTAX.RATE>
+End
+BookData<U2_BOOKDATA.SUPPLIER_ID>= BookRec<U2_BOOKS.SUPPLIER_ID>
+ReadV SupplierName From F.SUPPLIERS, BookRec<U2_BOOKS.SUPPLIER_ID>, U2_SUPPLIERS.FULLNAME Then
+BookData<U2_BOOKDATA.SUPPLIER_NAME>= SupplierName
+End
+BookData<U2_BOOKDATA.PURCH_PRICE> = BookRec<U2_BOOKS.PURCH_PRICE>
+BookData<U2_BOOKS.LONG_DESCRIPTION> = BookRec<U2_BOOKS.LONG_DESCRIPTION>
+Return
+

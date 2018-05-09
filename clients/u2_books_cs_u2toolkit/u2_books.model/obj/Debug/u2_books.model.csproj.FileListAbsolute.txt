@@ -1,0 +1,5 @@
+R:\bookstore\repository\clients\u2_books_cs_u2toolkit\u2_books.model\bin\Debug\u2_books.model.dll
+R:\bookstore\repository\clients\u2_books_cs_u2toolkit\u2_books.model\bin\Debug\u2_books.model.pdb
+R:\bookstore\repository\clients\u2_books_cs_u2toolkit\u2_books.model\obj\Debug\u2_books.model.csproj.CoreCompileInputs.cache
+R:\bookstore\repository\clients\u2_books_cs_u2toolkit\u2_books.model\obj\Debug\u2_books.model.dll
+R:\bookstore\repository\clients\u2_books_cs_u2toolkit\u2_books.model\obj\Debug\u2_books.model.pdb

@@ -1,0 +1,95 @@
+$BASICTYPE "P"
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_init
+*  @@Description : Initialize the U2 Demo Named Common
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO{
+*    The named common block holds open file pointers, reducing the overheads
+*    for routines opening and closing files.
+*    The common block contains a flag (U2_INIT) that is initially set to zero
+*    when the block is created. This is tested to automatically initialize
+*    the block.
+*  }
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$INCLUDE u2_common.h
+OPEN 'U2_BOOKS' TO F.BOOKS ELSE
+CRT 'Cannot open the U2_BOOKS File'
+STOP
+END
+OPEN 'U2_AUTHORS' TO F.AUTHORS ELSE
+CRT 'Cannot open the U2_AUTHORS File'
+STOP
+END
+OPEN 'U2_SALESTAX' TO F.SALESTAX ELSE
+CRT 'Cannot open the U2_SALESTAX File'
+STOP
+END
+OPEN 'U2_CLIENTS' TO F.CLIENTS ELSE
+CRT 'Cannot open the U2_CLIENTS File'
+STOP
+END
+OPEN 'U2_CLIENT_ORDERS' TO F.CLIENT.ORDERS ELSE
+CRT 'Cannot open the U2_CLIENT_ORDERS File'
+STOP
+END
+OPEN 'U2_ORDERS' TO F.ORDERS ELSE
+CRT 'Cannot open the U2_ORDERS File'
+STOP
+END
+OPEN 'U2_PROMOTIONS' TO F.PROMOTIONS ELSE
+CRT 'Cannot open the U2_PROMOTIONS File'
+STOP
+END
+OPEN 'U2_SHIPPING' TO F.SHIPPING ELSE
+CRT 'Cannot open the U2_SHIPPING File'
+STOP
+END
+OPEN 'U2_PERSONNEL' TO F.PERSONNEL ELSE
+CRT 'Cannot open the U2_PERSONNEL File'
+STOP
+END
+OPEN 'U2_TARGETS' TO F.TARGETS ELSE
+CRT 'Cannot open the U2_TARGETS File'
+STOP
+END
+OPEN 'U2_PUBLISHERS' TO F.PUBLISHERS ELSE
+CRT 'Cannot open the U2_PUBLISHERS File'
+STOP
+END
+OPEN 'U2_PURCHASES' TO F.PURCHASES ELSE
+CRT 'Cannot open the U2_PURCHASES File'
+STOP
+END
+OPEN 'U2_SUPPLIERS' TO F.SUPPLIERS ELSE
+CRT 'Cannot open the U2_SUPPLIERS File'
+STOP
+END
+OPEN 'U2_PARAMS' TO F.PARAMS ELSE
+CRT 'Cannot open the U2_PARAMS File'
+STOP
+END
+OPEN 'U2_PAYMENTS' TO F.PAYMENTS ELSE
+CRT 'Cannot open the U2_PAYMENTS File'
+STOP
+END
+RETURN
+

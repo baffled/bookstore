@@ -1,0 +1,14 @@
+ <?xml version="1.0" ?>
+ <SCREEN>
+   <HEADING>Shipper Details</HEADING>
+   <MAINFILE>U2_SHIPPERS</MAINFILE>
+   <MAINDICT>U2_SHIPPERS</MAINDICT>
+   <ENTRYMODE>0</ENTRYMODE>
+   <PROMPTS>
+     <PROMPT x="10" y="10">Shipper Code</PROMPT>
+     <PROMPT x="10" y="50">Short Description</PROMPT>
+     <PROMPT x="10" y="100">Cost</PROMPT>
+   </PROMPTS>
+   <FIELD x="50" y="10" fno="0" len="50"
+      hint="Enter shipping code or browse" />
+ </SCREEN>

@@ -1,0 +1,33 @@
+!SCRIPT MAKETABLE %f %i
+ 
+$INCLUDE books.tables DEFAULT
+* ---------------------------------------------------------------------------
+*  @@Name        : U2_TARGETS
+*  @@Description : Table Definition for U2_TARGETS
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO{}
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Version Stamp
+!V!
+* ---------------------------------------------------------------------------
+BEGIN TABLE U2_TARGETS
+TYPE 18
+MODULO 503
+SEPARATION 2
+   FIELD ID FNO 0 COLHEAD \Id\ LEN 3 JUST L
+   FIELD PERIOD FNO 1 COLHEAD \Period\ NUMBER LEN 8 JUST R
+   FIELD TARGET FNO 2 COLHEAD \Target\ MONEY LEN 8 JUST R
+   PHRASE ALL_FIELDS \ID PERIOD TARGET\
+   PHRASE DATA_FIELDS \ID PERIOD TARGET\
+ENDDEFN

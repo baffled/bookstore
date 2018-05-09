@@ -1,0 +1,133 @@
+$IFDEF UNIDATA
+$BASICTYPE "P"
+$ENDIF
+PROGRAM u2_exportsales
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_exportsales
+*  @@Description : Create a simple export of all sales and users 
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO {
+*    This creates a very simple export of all books purchased against the
+*    purchasing users to seed the recommendations system.
+*    These are weighted so the export data is:
+*    customer
+*    book
+*    date stamp
+*    author
+*    genre
+*  }
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log  
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$IFDEF UNIVERSE
+$OPTIONS PICK
+$ENDIF
+$INCLUDE books.inc U2_BOOKS.h
+$INCLUDE books.inc U2_ORDERS.h
+
+EQU COL.CUSTOMER TO 1
+EQU COL.BOOK     TO 2
+EQU COL.DATE     TO 3
+EQU COL.AUTHOR   TO 4
+EQU COL.GENRE    TO 5
+
+EQU DELIM TO ','
+
+Open 'U2_ORDERS' To F.ORDERS Else
+   Crt 'Cannot open ORDERS'
+   STOP
+End
+Open 'U2_BOOKS' To F.BOOKS Else
+   Crt 'Cannot open BOOKS'
+   STOP
+End
+
+OpenSeq 'all_sales.csv' TO FL Else
+  Create FL Else
+     Crt 'Cannot create the all_sales file'
+     STOP
+  End
+End
+GoSub Main
+GoSub WrapUp
+Crt 'Completed'
+STOP
+
+*---------------------------------------------------------------------------
+* Main
+*---------------------------------------------------------------------------
+Main:
+Line = ''
+Ct = 0
+Select F.ORDERS
+Fin = @False
+Loop
+ReadNext OrderId Else Fin = @TRUE
+Until Fin Do
+  GoSub Add
+Repeat
+Return
+
+
+*---------------------------------------------------------------------------
+* WrapUp
+*---------------------------------------------------------------------------
+WrapUp:
+   CloseSeq FL
+   Return
+   
+*---------------------------------------------------------------------------
+* Add
+*---------------------------------------------------------------------------
+Add:
+   Read OrderRec From F.ORDERS, OrderId Else
+      Return
+   End
+   Line<COL.CUSTOMER> = OrderRec<U2_ORDERS.CLIENT_ID>
+   
+   NoLines = DCount(OrderRec<U2_ORDERS.BOOK_ID>,@VM)
+   For ThisLine = 1 To NoLines
+      BookId = OrderRec<U2_ORDERS.BOOK_ID, ThisLine>
+      
+      Line<COL.BOOK> = BookId
+       
+      Read BookRec From F.BOOKS, BookId Then
+        Line<COL.GENRE> = BookRec<U2_BOOKS.GENRE>
+        Line<COL.AUTHOR> = BookRec<U2_BOOKS.AUTHOR_ID>
+        Line<COL.DATE> = (Field(OrderId,'*',1,1) * 86400) + (Field(OrderId,'*',2,1))
+        $IFDEF UNIDATA
+        DLine = Line
+        Convert @FM To DELIM In DLine
+        WriteSeq DLine On FL Else
+           Crt 'Write error'
+           Return
+        End
+        $ELSE
+        WriteSeq Convert(@FM,DELIM,Line) On FL Else
+           Crt 'Write error'
+           Return
+        End
+        $ENDIF
+      End
+   Next
+   
+   Return
+   
+

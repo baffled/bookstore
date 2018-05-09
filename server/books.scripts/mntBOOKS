@@ -1,0 +1,29 @@
+PA
+ENTER U2_BOOKS _
+HEADING "Books in Catalogue" _
+   @(2,2) "Title Id" @(15,2) FIELD ID SEQUENTIAL _
+   @(2,3) "Title" @(2,4) FIELD TITLE LEN 70 _
+   @(2,5) "Author Id" @(15,5) FIELD AUTHOR_ID _
+   RELATES U2_AUTHORS SHOWING FULLNAME _
+   @(25,5) FIELD AUTHOR_NAME _
+   @(2,6) "ISBN" @(15,6) FIELD ISBN _
+   @(2,7) "Department" @(15,7) FIELD DEPT _
+   @(2,8) "Genre" @(15,8) FIELD GENRE _
+   @(2,9) "Media" @(15,9) FIELD MEDIA _
+   @(2,10) "Publisher" @(15,10) FIELD PUBLISHER_ID _
+   RELATES U2_PUBLISHERS SHOWING FULLNAME _
+   @(25,10) FIELD PUBLISHER_NAME _
+   @(2,11) "Published" @(15,11) FIELD PUB_YEAR _
+   @(2,12) "Sale Price" @(15,12) FIELD SALE_PRICE _
+   @(40,12) "Purch Price" @(50,12) FIELD PURCH_PRICE _
+   @(2,13) "Stock level" @(15,13) FIELD STOCK_LEVEL _
+   @(40,13) "Min Order" @(50,13) FIELD MIN_ORDER _
+   @(2,14) "On Order" @(15,14) FIELD ON_ORDER _
+   @(2,15) "Tax Code " @(15,15) FIELD TAX_CODE _
+   @(2,16) "Supplier " @(15,16) FIELD SUPPLIER_ID _
+   RELATES U2_SUPPLIERS SHOWING FULLNAME _
+   @(25,16) FIELD SUPPLIER_NAME _
+   @(2,17) "Supplier Code" @(15,17) FIELD SUPPLIER_CODE _
+   @(2,18) "Description" _
+   @(2,19,10) FIELD LONG_DESCRIPTION MEMO _
+

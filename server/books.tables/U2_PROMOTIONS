@@ -1,0 +1,40 @@
+!SCRIPT MAKETABLE %f %i
+$INCLUDE books.tables DEFAULT
+ 
+* ---------------------------------------------------------------------------
+*  @@Name        : U2_PROMOTIONS
+*  @@Description : Table Definition for U2_PROMOTIONS
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO{}
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Version Stamp
+!V!
+* ---------------------------------------------------------------------------
+BEGIN TABLE U2_PROMOTIONS
+TYPE 18
+MODULO 503
+SEPARATION 2
+   FIELD ID                 FNO 0 COLHEAD \Id\ LEN 10 JUST L
+   FIELD SHORT_DESCRIPTION  FNO 1 COLHEAD \Short_description\ LEN 70 JUST L
+   FIELD DISCOUNT_PCT       FNO 2 COLHEAD \Discount_pct\ LEN 8 JUST R
+   FIELD START_DATE         FNO 3 COLHEAD \Start_date\ CONV \D4/\ LEN 12 JUST R
+   FIELD END_DATE           FNO 4 COLHEAD \End_date\ CONV \D4/\ LEN 12 JUST R
+   FIELD BOOK_ID            FNO 5 COLHEAD \Book_id\ LEN 10 JUST L MVED
+   FIELD TITLE_ID           FNO 5 COLHEAD \Title_id\ LEN 10 JUST L MVED
+   FIELD MIN_QTY            FNO 6 COLHEAD \Min_qty\ NUMBER LEN 8 JUST R
+   
+   FIELD TITLE_NAME EXPR \TRANS(U2_BOOKS,BOOK_ID,TITLE,"X")\ COLHEAD \Title_name\ LEN 30 JUST L MVED
+   PHRASE DATA_FIELDS \ID SHORT_DESCRIPTION DISCOUNT_PCT START_DATE END_DATE BOOK_ID MIN_QTY\
+   PHRASE ALL_FIELDS \ID SHORT_DESCRIPTION DISCOUNT_PCT START_DATE END_DATE BOOK_ID MIN_QTY TITLE_NAME\
+ENDDEFN

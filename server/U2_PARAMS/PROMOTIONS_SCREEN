@@ -1,0 +1,25 @@
+<?xml version="1.0" ?>
+<SCREEN displayOnly="no" noClear="yes" width="650">
+<MAINFILE>U2_PROMOTIONS</MAINFILE>
+<MAINDICT>U2_PROMOTIONS</MAINDICT>
+<HEADING>Maintain Sales Promotions</HEADING>
+<PROMPTS>
+  <PROMPT x="10" y="10" text="Promo code" />
+  <PROMPT x="10" y="50" text="Description" />
+  <PROMPT x="10" y="100" text="Start Date" />
+  <PROMPT x="10" y="150" text="End Date" />
+  <PROMPT x="10" y="200" text="Min Qty" />
+  <PROMPT x="10" y="250" text="Discount %" />
+  <PROMPT x="300" y="10" text="Books (F3 to search)" />
+</PROMPTS>
+<FIELDS>
+  <FIELD x="100" y="10" fno="0" name="ID" length="100" depth="0" selection="SORT U2_PROMOTIONS SHORT_DESCRIPTION DISCOUNT_PCT" />
+  <FIELD x="100" y="50" fno="1" name="SHORT_DESCRIPTION" length="180" depth="0" />
+  <FIELD x="100" y="100" fno="3" name="START_DATE" length="120" conv="D4" depth="0" />
+  <FIELD x="100" y="150" fno="4" name="END_DATE" length="120" conv="D4" depth="0"  />
+  <FIELD x="100" y="200" fno="6" name="MIN_QTY" length="120" numeric="yes" depth="0"  />
+  <FIELD x="100" y="250" fno="2" name="DISCOUNT_PCT" length="120" numeric="yes" depth="0"  />
+  <FIELD x="300" y="50" fno="5" name="BOOK_ID" length="50" depth="8" colHead="Code" relates="U2_BOOKS" selection="SORT U2_BOOKS TITLE" />
+  <FIELD x="300" y="50" name="TITLE_NAME" length="250" depth="-1" colHead="Title" depends="BOOK_ID" entryType="CALC"  />
+</FIELDS>
+</SCREEN>

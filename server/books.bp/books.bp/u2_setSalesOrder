@@ -1,0 +1,92 @@
+SUBROUTINE u2_setSalesOrder( SalesId, OrderRec, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : us_setSalesOrder
+*  @@Description : Write a new or updated sales order
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO{
+*    The sales orders are here keyed on a combination of date, time and a
+*    sequence number to disambiguate. This is not normal practice, but for
+*    the demontration it overcomes the need to include counters with the data.
+*}
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$OPTIONS PICK
+$INCLUDE u2_common.h
+$INCLUDE books.inc U2_CLIENT_ORDERS.h
+$INCLUDE books.inc U2_ORDERS.h
+ErrText = ''
+OrigRec = ''
+If SalesId = '' Then
+Counter = 0
+Key = Date() :"*":Time()
+Found = @False
+Loop
+Counter += 1
+SalesId = Key : "*": Counter
+ReadU Temp From F.ORDERS, SalesId Locked
+Found = @False
+End Then
+Found = @False
+End Else
+Found = @True
+End
+Until Found Do
+Release F.ORDERS, SalesId
+Repeat
+End Else
+ReadU OrigRec From F.ORDERS, SalesId Else
+OrigRec = ''
+End
+End
+* validate
+! TBD
+* write
+Write OrderRec On F.ORDERS, SalesId
+GoSub UpdateClientOrders
+RETURN
+*---------------------------------------------------------------------------
+* UpdateClientOrders
+*---------------------------------------------------------------------------
+UpdateClientOrders:
+* update client order index
+ClientId = OrderRec<U2_ORDERS.CLIENT_ID>
+ReadU ClientIndexRec From F.CLIENT.ORDERS, ClientId Else
+ClientIndexRec = ''
+End
+Locate SalesId In ClientIndexRec<U2_CLIENT_ORDERS.ORDER_IDS> Setting Pos Else
+Ins SalesId Before ClientIndexRec<U2_CLIENT_ORDERS.ORDER_IDS,Pos>
+End
+Write ClientIndexRec On F.CLIENT.ORDERS, ClientId
+If OrigRec<U2_ORDERS.CLIENT_ID> = '' Then
+Return
+End
+If OrigRec<U2_ORDERS.CLIENT_ID> = ClientId Then
+Return
+End
+ClientId = OrigRec<U2_ORDERS.CLIENT_ID>
+ReadU ClientIndexRec From F.CLIENT.ORDERS, ClientId Else
+ClientIndexRec = ''
+End
+Locate SalesId In ClientIndexRec<U2_CLIENT_ORDERS.ORDER_IDS> Setting Pos Then
+Del ClientIndexRec<U2_CLIENT_ORDERS.ORDER_IDS,Pos>
+End
+Write ClientIndexRec On F.CLIENT.ORDERS, ClientId
+RETURN

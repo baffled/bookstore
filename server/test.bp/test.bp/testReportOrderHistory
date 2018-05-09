@@ -1,0 +1,8 @@
+PROGRAM
+Crt 'book id ':
+Input bookId
+Call u2_reportOrderHistory( bookId, results, errtext)
+crt '[errtext]'
+crt errtext
+crt '[results]'
+crt results

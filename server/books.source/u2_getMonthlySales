@@ -1,0 +1,183 @@
+       SUBROUTINE u2_getMonthlySales(InData, OutData, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : bookSales
+*  @@Description : Return sales charts for book sales
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$INCLUDE books.bp u2_common.h
+$INCLUDE books.inc U2_BOOKS.h
+$INCLUDE books.inc U2_ORDERS.h
+
+       EQU IN.TOTALS To 1
+       EQU IN.GENRES To 2
+       EQU IN.DEPTS To 3
+
+       DIM SERIES(10)
+       MAT SERIES = ''
+
+       EQU MONTHNAMES TO \"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"\
+
+       Call u2_init
+
+
+
+       Action = InData<1>
+
+       GoSub Main
+
+       Begin Case
+          Case Action = IN.TOTALS
+            * Now return encoded
+            ChartInfo = \{"chartType":"bar"\
+            ChartInfo<2> = \"cols":["Month"\
+            ChartInfo<3> = \"colTypes":["string"\
+            ChartInfo<4> = \"series":[[\:MONTHNAMES:\]\
+
+            For I = 1 To NoYears
+                ChartInfo<2> := ',':Years<I>
+                ChartInfo<3> := ',"number"'
+                ChartInfo<4> := ',[': Convert(@FM,',',SERIES(I)) : ']'
+            Next
+            ChartInfo<2> := ']'
+            ChartInfo<3> := ']'
+            ChartInfo<4> := ']}'
+
+          Case Action = IN.GENRES
+            ChartInfo = \{"chartType":"pie"\
+            ChartInfo<2> = \"cols":["Genre","Qty"]\
+            ChartInfo<3> = \"colTypes":["string","number"]\
+            ChartInfo<4> = \"series":[["\:Change(Genres,@FM,\","\):\"]\
+            ChartInfo<4> := \,[\:Change(GenreTotals,@FM,","):\]]}\
+     End Case
+
+
+            OutData = Convert(@FM,",",ChartInfo)
+
+       RETURN
+
+
+*---------------------------------------------------------------------------
+* Main
+*---------------------------------------------------------------------------
+Main:
+       NoYears = 0
+       LastYear = ''
+       Depts = ''
+       BookTotals = ''
+       Genres = ''
+       GenreTotals = ''
+       DeptTotals = ''
+
+       Years = ''
+
+       BookDepts = ''
+       BookGenres = ''
+
+       GoSub GetGenres
+       GoSub Build
+
+       Return
+
+*---------------------------------------------------------------------------
+* AddOrder
+*---------------------------------------------------------------------------
+AddOrder:
+
+       Begin Case
+          Case Action = 1 ;* months
+
+
+             OrderDate = Id["*",1,1]
+             Month = Oconv(OrderDate, "DM") "R%2"
+             Year = Oconv(OrderDate,"DY4")
+             NoMonths += 1
+             StoreDate= Year:Month
+
+             TotalQty = Sum(OrderRec<U2_ORDERS.QTY>)
+             If Year <> LastYear Then
+                NoYears += 1
+                Years<NoYears> = Year
+                LastYear = Year
+                For J = 1 to 12
+                   SERIES(NoYears)<J> = 0
+                Next
+             End
+             SERIES(NoYears)<Month> += TotalQty
+
+          Case 1
+* Now go through each one working out the dept and genre
+             NoTitles = DCount(OrderRec<U2_ORDERS.BOOK_ID>,@VM)
+             For I = 1 To NoTitles
+                BookId = OrderRec<U2_ORDERS.BOOK_ID, I>
+                Genre = BookGenres<BookId>
+                Dept = BookDepts<BookId>
+                Qty = OrderRec<U2_ORDERS.QTY, I>
+                Locate Genre In Genres By "AL" Setting Pos Else
+                   Ins Genre Before Genres<Pos>
+                   Ins 0 Before GenreTotals<Pos>
+                End
+                If Dept = "ADULT" Then
+                   DeptTotals<1,1> += Qty
+                   GenreTotals<Pos> += Qty
+                End Else
+                   DeptTotals<1,2> += Qty
+                   GenreTotals<Pos> += Qty
+                End
+             Next
+       End Case
+       Return
+
+*---------------------------------------------------------------------------
+* Build
+*---------------------------------------------------------------------------
+Build:  
+       ExLine = 'SSELECT U2_ORDERS BY ORDER_DATE'
+       Execute ExLine, SELECT. > SLIST
+       Fin = @False
+       Loop
+          ReadNext Id From SLIST Else Fin = @True
+       Until Fin Do
+          Read OrderRec From F.ORDERS, Id Then
+             GoSub AddOrder
+          End
+       Repeat
+
+       Return
+
+*---------------------------------------------------------------------------
+* GetGenres
+*---------------------------------------------------------------------------
+GetGenres: 
+
+       Select F.BOOKS
+       Fin = @False
+       Loop
+          ReadNext Id Else Fin = @True
+       Until Fin Do
+          Read BookRec From F.BOOKS, Id Then
+             BookGenres<Id> = BookRec<U2_BOOKS.GENRE>
+             BookDepts<Id> = BookRec<U2_BOOKS.DEPT>
+          End
+       Repeat
+       Return
+

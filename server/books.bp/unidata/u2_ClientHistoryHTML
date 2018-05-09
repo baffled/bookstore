@@ -1,0 +1,133 @@
+$BASICTYPE "P"
+PROGRAM u2_ClientHistoryHTML
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_ClientHistoryHTML
+*  @@Description : Get a full set of data for a client
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$INCLUDE u2_common.h
+$INCLUDE books.inc U2_CLIENTS.h
+$INCLUDE books.inc U2_CLIENTDATA.h
+$INCLUDE books.inc U2_CLIENT_ORDERS.h
+$INCLUDE books.inc U2_ORDERS.h
+$INCLUDE books.inc U2_PAYMENTS.h
+CRT '<html>'
+CRT '<head>'
+CRT '<title>Client History</title>'
+GOSUB AddStyle
+CRT '</head>'
+CRT '<body>'
+GET(ARG.) ClientId ELSE
+ClientId = ''
+END
+READ ClientRec FROM F.CLIENTS, ClientId THEN
+GOSUB AddClient
+END ELSE
+ClientRec = ''
+CRT 'Unknown Client'
+END
+CRT '</body>'
+CRT '</html>'
+STOP
+* --------------------------------------------------------------------------
+* Add top level client
+* --------------------------------------------------------------------------
+AddClient: 
+CRT '<table>'
+CRT '<tr><td>Client Id:</td><td><a href="client:':ClientId:'">':ClientId:'</a></td></tr>'
+CRT '<tr><td>Surname</td><td>':ClientRec<U2.CLIENTS.SURNAME>:'</td></tr>'
+CRT '<tr><td>Firstname</td><td>':ClientRec<U2.CLIENTS.FORENAME>:'</td></tr>'
+CRT '<tr><td>Address</td><td>':CHANGE(ClientRec<U2.CLIENTS.ADDRESS>,@VM,CHAR(13):CHAR(10)):'</td></tr>'
+CRT '<tr><td>Joined</td><td>':OCONV(ClientRec<U2.CLIENTS.JOIN.DATE>,"D4/") :'</td></tr>'
+CRT '</table>'
+CRT '<br />'
+CRT '<table>'
+CRT '<tr><th>Order number</th><th>Order Date</th><th>Time</th><th align="right">Total</th></tr>'
+* Get client orders
+READ CliOrderRec FROM F.CLIENT.ORDERS, ClientId ELSE
+CliOrderRec = ''
+END
+NumOrders = DCOUNT(CliOrderRec<U2.CLIENT.ORDERS.ORDER.IDS>,@VM)
+FOR OrderNo = 1 TO NumOrders
+OrderId = CliOrderRec<U2.CLIENT.ORDERS.ORDER.IDS,OrderNo>
+GOSUB AddOrder
+NEXT OrderNo
+CRT '</table>'
+CRT '<br />'
+CRT '<table>'
+CRT '<tr><th>Reference</th><th>Payment Date</th><th align="right">Total</th></tr>'
+* Get payment history
+CALL u2_getClientPayments(ClientId, PaymentIds, ErrText)
+NumPayments = DCOUNT(PaymentIds,@FM)
+FOR PayNo =1 TO NumPayments
+PayId = PaymentIds<PayNo>
+GOSUB AddPayment
+NEXT PayNo
+CRT '</table>'
+RETURN
+* --------------------------------------------------------------------------
+* Add Order
+* --------------------------------------------------------------------------
+AddOrder:
+READ OrderRec FROM F.ORDERS, OrderId ELSE
+RETURN
+END
+CRT '<tr><td><a href="order:':OrderId:'">':OrderId:'</a></td>'
+CRT '<td>':OCONV(FIELD(OrderId,"*",1),"D4/"):'</td>'
+CRT '<td>':OCONV(FIELD(OrderId,"*",2),"MTS"):'</td>'
+Total = 0
+CALL u2_calcOrderTotal(Total, OrderRec)
+CRT '<td align="right">':OCONV(Total,"MD2"):'</td></tr>'
+RETURN
+* --------------------------------------------------------------------------
+* add payment
+* --------------------------------------------------------------------------
+AddPayment:
+READ PaymentRec FROM F.PAYMENTS, PayId ELSE                        
+RETURN
+END
+CRT '<tr><td><a href="pay:':PayId:'">':PayId:'</a></td>'
+CRT '<td>':OCONV(PaymentRec<U2.PAYMENTS.PAY.DATE>,"D4/"):'</td>'
+CRT '<td align="right">':OCONV(PaymentRec<U2.PAYMENTS.AMOUNT>,"MD2"):'</td></tr>'
+RETURN
+* --------------------------------------------------------------------------
+* add payment
+* --------------------------------------------------------------------------
+AddStyle:
+CRT '<style>'
+CRT 'body{'
+CRT ' font-family:Arial'
+CRT ' font-size:9pt'
+CRT '}'
+CRT 'table{'
+CRT ' border-style:1px solid aliceblue;'
+CRT ' font-family:Arial;'
+CRT ' font-size:8pt;'
+CRT '}'
+CRT 'td{'
+CRT '  font-family:Arial;'
+CRT '  font-size:8pt;'
+CRT '}'
+CRT '</style>'
+RETURN
+

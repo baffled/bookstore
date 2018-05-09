@@ -1,0 +1,162 @@
+! tests for purchase order creation
+$INCLUDE books.inc U2_BOOKS.h
+$INCLUDE books.inc U2_ORDERS.h
+$INCLUDE books.inc U2_PURCHASES.h
+
+GoSub Init
+GoSub ShouldCreateOrders
+GoSub WrapUp
+STOP
+
+* --------------------------------------------------------------------------
+* Init
+* --------------------------------------------------------------------------
+Init:
+Open 'U2_BOOKS' To U2_BOOKS Else
+  Error 'Cannot open U2_BOOKS'
+  STOP
+End
+Open 'U2_ORDERS' To U2_ORDERS Else
+  Error 'Cannot open U2_ORDERS'
+  STOP
+End
+Open 'U2_PURCHASES' To U2_PURCHASES Else
+  Error 'Cannot open U2_PURCHASES'
+  STOP
+End
+Open 'U2_PARAMS' To U2_PARAMS Else
+  Error 'Cannot open U2_PARAMS'
+  STOP
+End
+Read OrigRec From U2_PARAMS,'NEXT.PO' Else
+  OrigRec = ''
+End
+Write OrigRec On U2_PARAMS,'NEXT.PO.bak'
+Delete U2_PARAMS,'NEXT.PO'
+Return
+
+
+* --------------------------------------------------------------------------
+* WrapUp
+* --------------------------------------------------------------------------
+WrapUp:
+
+   Write OrigRec On U2_PARAMS,'NEXT.PO'
+   Delete U2_PARAMS,'NEXT.PO.bak'
+   Return
+
+* --------------------------------------------------------------------------
+* CallSub
+* --------------------------------------------------------------------------
+CallSub:
+  Counter = 0
+  ErrText = ''
+  PurchaseOrders = ''
+  Call u2_createDailyPOs(OrderDate, PurchaseOrders, ErrText)
+Return
+
+* --------------------------------------------------------------------------
+* ShouldCreateOrders
+* --------------------------------------------------------------------------
+ShouldCreateOrders:
+  Announce "Should CreateOrders"
+  
+  * one that will decrement
+  BookRec = ''
+  BookRec<U2_BOOKS.TITLE> = 'Book 1'
+  BookRec<U2_BOOKS.ISBN> = '1000000001'
+  BookRec<U2_BOOKS.STOCK_LEVEL> = 10
+  BookRec<U2_BOOKS.MIN_ORDER> = 5
+  BookRec<U2_BOOKS.PURCH_PRICE> = 1099
+  BookRec<U2_BOOKS.SUPPLIER_CODE> = 'BOOKA'
+  BookRec<U2_BOOKS.SUPPLIER_ID> = 'NN'  
+  Write BookRec On U2_BOOKS, '1'
+  
+  *  one that will trigger a PO
+  BookRec = ''
+  BookRec<U2_BOOKS.TITLE> = 'Book 2'
+  BookRec<U2_BOOKS.ISBN> = '1000000002'
+  BookRec<U2_BOOKS.STOCK_LEVEL> = 0
+  BookRec<U2_BOOKS.MIN_ORDER> = 1
+  BookRec<U2_BOOKS.PURCH_PRICE> = 1199
+  BookRec<U2_BOOKS.SUPPLIER_CODE> = 'BOOKB'
+  BookRec<U2_BOOKS.SUPPLIER_ID> = 'NN'
+  Write BookRec On U2_BOOKS, '2'
+  
+  *  one that will trigger a PO with minimum reorder level
+  BookRec = ''
+  BookRec<U2_BOOKS.TITLE> = 'Book 3'
+  BookRec<U2_BOOKS.ISBN> = '1000000003'
+  BookRec<U2_BOOKS.STOCK_LEVEL> = 1
+  BookRec<U2_BOOKS.MIN_ORDER> = 5
+  BookRec<U2_BOOKS.PURCH_PRICE> = 1299
+  BookRec<U2_BOOKS.SUPPLIER_CODE> = 'BOOKC'
+  BookRec<U2_BOOKS.SUPPLIER_ID> = 'BB'
+  Write BookRec On U2_BOOKS, '3'
+  
+  
+  *  one for the same supplier (same PO)
+  BookRec = ''
+  BookRec<U2_BOOKS.TITLE> = 'Book 4'
+  BookRec<U2_BOOKS.ISBN> = '1000000004'
+  BookRec<U2_BOOKS.STOCK_LEVEL> = 0
+  BookRec<U2_BOOKS.MIN_ORDER> = 5
+  BookRec<U2_BOOKS.PURCH_PRICE> = 1399
+  BookRec<U2_BOOKS.SUPPLIER_CODE> = 'BOOKD'
+  BookRec<U2_BOOKS.SUPPLIER_ID> = 'BB'  
+  Write BookRec On U2_BOOKS, '4'
+  
+  Key = Date() : "*" : Time()
+  OrderRec = ''
+  OrderRec<U2_ORDERS.BOOK_ID> = 1:@VM:2:@VM:3
+  OrderRec<U2_ORDERS.QTY> = 1:@VM:2:@VM:3
+  Write OrderRec On U2_ORDERS, Key : "*001"
+  
+  OrderRec = ''
+  OrderRec<U2_ORDERS.BOOK_ID> = 4
+  OrderRec<U2_ORDERS.QTY> = 1
+  Write OrderRec On U2_ORDERS, Key : "*002"
+  
+  OrderDate = Date()
+  GoSub CallSub
+  
+  AssertFull "Should have purchase orders", PurchaseOrders
+  AssertEmpty "Should have no errors", ErrText
+  AssertIs "Should have two POs", DCount(PurchaseOrders,@FM), 2
+  
+  * first should decrement only
+  NewBookRec = Read("U2_BOOKS", 1)
+  AssertIs "Should have decremented book 1", NewBookRec<U2_BOOKS.STOCK_LEVEL>,9
+  
+  
+  * check both POs - we don't know which order
+  For ThisPO = 1 To 2
+  PORec = Read("U2_PURCHASES", PurchaseOrders<ThisPO>)
+  SupplierId = PORec<U2_PURCHASES.SUPPLIER_ID>
+  Begin Case
+     Case SupplierId = 'NN'
+        AssertIs "Should have book 2", PORec<U2_PURCHASES.BOOK_ID>, 2
+        AssertIs "Should have ISBN 2", PORec<U2_PURCHASES.ISBN>, '1000000002'
+        AssertIs "Should have price 2", PORec<U2_PURCHASES.PRICE>, 1199
+        AssertIs "Should have Qty for 2", PORec<U2_PURCHASES.ORDER_QTY>, 3
+        
+     Case SupplierId = 'BB'
+        AssertIs "Should have two books", DCOunt(PORec<U2_PURCHASES.BOOK_ID>,@VM), 2
+        AssertIs "Should have book 3", PORec<U2_PURCHASES.BOOK_ID,1>, 3
+        AssertIs "Should have ISBN 3", PORec<U2_PURCHASES.ISBN,1>, '1000000003'
+        AssertIs "Should have price 3", PORec<U2_PURCHASES.PRICE, 1>, 1299
+        AssertIs "Should have Qty for 3", PORec<U2_PURCHASES.ORDER_QTY, 1>, 5
+        
+        AssertIs "Should have book 4", PORec<U2_PURCHASES.BOOK_ID,2>, 4
+        AssertIs "Should have ISBN 4", PORec<U2_PURCHASES.ISBN,2>, '1000000004'
+        AssertIs "Should have price 4", PORec<U2_PURCHASES.PRICE, 2>, 1399
+        AssertIs "Should have Qty for 4", PORec<U2_PURCHASES.ORDER_QTY, 2>, 5
+        
+        
+     Case 1
+        Error 'Bad supplier id for PurchaseOrder ' : ThisPO
+  End Case
+  Next
+  
+  Return
+  

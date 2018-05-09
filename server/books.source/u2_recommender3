@@ -1,0 +1,234 @@
+       SUBROUTINE u2_recommender( Action, InData, OutData, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_recommender
+*  @@Description : Simply recommend books
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO {
+*  }
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$IFDEF UNIVERSE
+$OPTIONS PICK
+$INCLUDE UNIVERSE.INCLUDE UDO.H
+
+$ENDIF
+$INCLUDE books.inc U2_BOOKS.h
+$INCLUDE books.inc U2_ORDERS.h
+
+$INCLUDE books.inc u2_recommender.h
+
+       
+       OutData = ''
+       ErrText = ''
+       
+       Open 'U2_ORDERS' To F.ORDERS Else
+          Crt 'Cannot open ORDERS'
+          STOP
+       End
+       Open 'U2_BOOKS' To F.BOOKS Else
+          Crt 'Cannot open BOOKS'
+          STOP
+       End
+       Open 'U2_PAIRS' TO F.PAIRS Else
+          Crt 'Cannot open PAIRS'
+          STOP
+       End
+       Open 'U2_CLIENT_BOOKS' To F.CLIENT_BOOKS Else
+          Crt 'Cannot open CLIENT BOOKS'
+          STOP
+       End
+       Open 'U2_BOOK_CLIENTS' To F.BOOK_CLIENTS Else
+          Crt 'Cannot open BOOK_CLIENTS'
+          STOP
+       End
+       
+       
+
+       Begin Case
+          Case Action = RECOMMEND_ACTION.BUILD
+             GoSub Build
+          Case Action = RECOMMEND_ACTION.ORDER
+             GoSub BuildOrder
+          Case Action = RECOMMEND_ACTION.REPORT
+             Gosub Report
+          Case Action = RECOMMEND_ACTION.RECOMMEND
+             GoSub Recommend
+          Case Action = RECOMMEND_ACTION.CLEAR
+             GoSub ClearDown
+       End Case
+
+       RETURN
+
+
+* --------------------------------------------------------------------------
+* Build : build the initial sets, with the ability to select back a subset
+* --------------------------------------------------------------------------
+Build:
+       Limit = InData<1>
+       Line = ''
+       Ct = 0
+
+       ClearFile F.PAIRS
+
+       Select F.ORDERS
+       Fin = @False
+       Loop
+          Ct += 1
+          ReadNext OrderId Else Fin = @TRUE
+       Until Fin Or (Limit And (Ct > Limit)) Do
+          GoSub BuildOrderToModel
+       Repeat
+
+       Return
+
+* --------------------------------------------------------------------------
+* BuildOrder : add a new order into the data set
+* --------------------------------------------------------------------------
+BuildOrder:
+       OrderId = InData<1>
+       GoSub BuildOrderToModel
+       Return
+
+*---------------------------------------------------------------------------
+* BuildOrderToModel
+*---------------------------------------------------------------------------
+BuildOrderToModel:
+       Read OrderRec From F.ORDERS, OrderId Else
+          Return
+       End
+       ClientId = OrderRec<U2_ORDERS.CLIENT_ID>
+       Read ClientBooksRec From F.CLIENT_BOOKS, ClientId Else
+          ClientBooksRec = ''
+       End
+       NoLines = DCount(OrderRec<U2_ORDERS.BOOK_ID>,@VM)
+       For ThisLine = 1 To NoLines
+          BookId = OrderRec<U2_ORDERS.BOOK_ID, ThisLine>
+          Locate BookId In ClientBooksRec By 'AR' Setting Pos Else
+             Ins BookId Before ClientBooksRec<Pos>
+          End
+
+          Read BookClientsRec From F.BOOK_CLIENTS, BookId Else
+             BookClientRec = ''
+          End
+          Locate ClientId In BookClientsRec By 'AR' Setting Pos Else
+              Ins ClientId Before BookClientsRec<Pos>
+          End
+          Write BookClientsRec On F.BOOK_CLIENTS, ClientId      
+       Next
+       
+       Write ClientBooksRec On F.CLIENT_BOOKS, ClientId
+       
+       
+       Return
+
+*---------------------------------------------------------------------------
+* ClearDown
+*---------------------------------------------------------------------------
+ClearDown:
+       return
+
+*---------------------------------------------------------------------------
+* Recommend
+*---------------------------------------------------------------------------
+Recommend:
+
+       MyBookId   = InData<1>
+       MyClientId = InData<2>
+       Limit      = InData<3>
+
+       Read BookRec From F.BOOKS, MyBookId Else
+          BookRec = ''
+       End
+       AuthorId = BookRec<U2_BOOKS.AUTHOR_ID>
+       Genre    = BookRec<U2_BOOKS.GENRE>
+       
+       * Find all the clients that have bought this book
+       Read BookClientsRec From F.BOOK_CLIENTS, MyBookId else
+          BookClientsRec = ''
+       End
+         
+* for each of these get the other books they have bought and
+* put these into an array
+       BookList = ''
+       BookCounts = ''
+       NoClients = DCount(BookClientsRec,@FM)
+         
+       For ThisClient = 1 To NoClients
+          ClientId = BookClientsRec< ThisClient >
+          If ClientId <> MyClientId Then
+             Read ClientBooksRec From F.CLIENT_BOOKS, ClientId Else
+                 ClientBooksRec = ''
+             End
+             NoBooks = DCount(ClientBooksRec,@FM)
+             For ThisBook = 1 To NoBooks
+                BookId = ClientBooksRec<ThisBook>
+                If BookId <> MyBookId Then
+                   Locate BookId In BookList By 'AR' Setting Pos Else
+                      Ins BookId Before BookList<Pos>
+                      Ins 0 Before BookCounts<Pos>
+                   End
+                   BookCounts<Pos> += 1
+                End
+             Next
+          End
+       Next
+
+  
+* Now we apply weightings to all of these
+       NoBooks = DCount(BookList,@FM)
+       For ThisBook = 1 To NoBooks
+          Read BookRec From F.BOOKS, BookList<ThisBook> Then
+             Begin Case
+                Case AuthorId = BookRec<U2_BOOKS.AUTHOR_ID>
+                   BookCounts<ThisBook> = BookCounts<ThisBook> * RECOMMEND_WEIGHT.AUTHOR
+                Case Genre = BookRec<U2_BOOKS.GENRE>
+                   BookCounts<ThisBook> = BookCounts<ThisBook> * RECOMMEND_WEIGHT.GENRE
+             End Case
+          End
+       Next
+       
+* Finally organize based on their weighted counts
+       OrderedCounts = ''
+       OrderedBooks = ''
+       For ThisBook = 1 To NoBooks
+          Locate BookCounts<ThisBook> In OrderedCounts By 'DR' Setting Pos Else Null
+          Ins BookCounts<ThisBook> Before OrderedCounts<Pos>
+          Ins BookList<ThisBook> Before OrderedBooks<Pos>
+       Next
+       If Limit Then
+          OrderedBooks = OrderedBooks[@FM, 1, Limit]
+          OrderedCounts = OrderedCounts[@FM, 1, Limit]
+       End
+       
+       OutData<1> = Lower(OrderedBooks)
+       OutData<2> = Lower(OrderedCounts)
+  
+       Return
+
+*---------------------------------------------------------------------------
+* Report
+*---------------------------------------------------------------------------
+Report:
+  
+       return
+
+
+

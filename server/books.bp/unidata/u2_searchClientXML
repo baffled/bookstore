@@ -1,0 +1,61 @@
+$BASICTYPE "P"
+SUBROUTINE u2_searchClientXML(SearchData, ClientList, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_searchClientXML
+*  @@Description : Construct an XML query to return client data
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+Query = ''
+SearchId     = SearchData<1>
+SearchSurname = SearchData<2>
+SearchForename  = SearchData<3>
+* Next step is to select the orders in the date range if specified
+Query = 'SORT U2_CLIENTS'
+WithClause = ''
+IF SearchId <> '' THEN
+WithClause = ' WITH ID = "':SearchId:'"'
+END ELSE
+IF SearchSurname <> '' THEN
+WithClause = ' WITH U_SURNAME = "': SearchSurname :'"'
+END
+IF SearchForename <> '' THEN
+IF WithClause <> '' THEN WithClause := ' AND '
+WithClause := ' WITH U_FORENAME = "': SearchForename : '"'
+END
+END
+Query := WithClause
+Query := ' ID FORENAME SURNAME DELIM_ADDRESS JOIN_DATE ACCOUNT_STATUS '
+Query := ' TOXML ELEMENTS ID.SUP'
+EXECUTE Query CAPTURING Results
+* Sometimes there is a line break before the XML begins
+Ix = INDEX(Results,"<",1)
+IF Ix > 0 THEN
+GOSUB CleanClient
+ClientList = Results[Ix, LEN(Results)]
+END ELSE
+ErrText = 'No results selected'
+END
+RETURN
+CleanClient:
+RETURN
+

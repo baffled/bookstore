@@ -1,0 +1,8 @@
+PROGRAM
+Crt 'Book Id':
+Input BookId
+If BookId = '' Then STOP
+Locking = 0
+Call u2_getBookData( BookId, Locking, BookData, ErrText)
+Crt BookData
+STOP

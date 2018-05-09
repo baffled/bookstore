@@ -1,0 +1,106 @@
+$BASICTYPE "P"
+SUBROUTINE u2_promos( OrderRec, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_promos
+*  @@Description : apply any current promotions
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$INCLUDE books.bp u2_common.h
+$INCLUDE books.inc U2_ORDERS.h
+$INCLUDE books.inc U2_BOOKS.h
+$INCLUDE books.inc U2_PROMOTIONS.h
+$INCLUDE books.inc U2_SALESTAX.h
+COMMON /U2_PROMO/ PROMOTIONS(10), PROMO_INIT, PROMO_COUNT, PROMO_IDS
+* First hold current promotions in an array to prevent repeated reading
+IF NOT(PROMO_INIT) THEN
+PROMO_INIT = @TRUE
+PROMO_COUNT = 0
+MAT PROMOTIONS = ''
+PROMO_IDS = ''
+EXECUTE "SELECT U2_PROMOTIONS",SELECT. > SLIST
+Fin = @FALSE
+LOOP
+READNEXT Id FROM SLIST ELSE Fin = @TRUE
+UNTIL Fin DO
+READ PromoRec FROM F.PROMOTIONS, Id THEN
+PROMO_COUNT += 1
+PROMOTIONS(PROMO_COUNT) = PromoRec
+PROMO_IDS<PROMO_COUNT> = Id
+END
+REPEAT
+END
+* need to undo any previous promotions and set back to the original pricing
+* before recalculating in case they are no longer valid.
+NoLines = DCOUNT(OrderRec<U2.ORDERS.BOOK.ID>,@VM)
+FOR I = 1 TO NoLines
+BookId = OrderRec<U2.ORDERS.BOOK.ID,I>
+READ BookRec FROM F.BOOKS, BookId THEN
+OrderRec<U2.ORDERS.PRICE, I> = BookRec<U2.BOOKS.SALE.PRICE>
+TaxCode = OrderRec<U2.ORDERS.TAX.CODE,I>
+IF OrderRec<U2.ORDERS.TAX.CODE,I> = '' THEN
+TaxCode = BookRec<U2.BOOKS.TAX.CODE>
+OrderRec<U2.ORDERS.TAX.CODE, I> = TaxCode
+READV Rate FROM F.SALESTAX, TaxCode, U2.SALESTAX.RATE THEN
+OrderRec<U2.ORDERS.TAX.RATE,I> = Rate
+END
+END 
+END
+NEXT I
+* get a list of all titles on the order that are in the promotion
+* split these into groups of minimum quantity and apply the discount to the first one in the set
+* this supports diect discounts (qty =1) or 'n for 1' offers
+FOR PromoCounter = 1 TO PROMO_COUNT
+PromoRec = PROMOTIONS(PromoCounter)
+PromoId  = PROMO_IDS<PromoCounter>
+GOSUB ApplyPromotion
+NEXT PromoCounter
+RETURN
+ApplyPromotion:      
+Found = ''
+FOR Pos = 1 TO NoLines
+BookId = OrderRec<U2.ORDERS.BOOK.ID,Pos>
+LOCATE BookId IN PromoRec<U2.PROMOTIONS.BOOK.ID> SETTING P2 THEN
+IF PromoRec<U2.PROMOTIONS.MIN.QTY> <= 1 THEN
+GOSUB ApplyDiscount
+END ELSE
+Found<-1> = Pos
+END
+END
+NEXT
+NoFound = DCOUNT(Found,@FM)
+IF NoFound = 0 THEN
+RETURN
+END
+IF NoFound >= PromoRec<U2.PROMOTIONS.MIN.QTY> THEN
+Pos = Found<1>
+GOSUB ApplyDiscount
+END
+RETURN                                       
+ApplyDiscount:       
+OrderRec<U2.ORDERS.PROMO.ID, Pos> = PromoId
+READV Price FROM F.BOOKS, BookId, U2.BOOKS.SALE.PRICE THEN
+Discount = Price * PromoRec<U2.PROMOTIONS.DISCOUNT.PCT> / 100
+OrderRec<U2.ORDERS.PRICE,Pos> = Discount
+END
+RETURN
+

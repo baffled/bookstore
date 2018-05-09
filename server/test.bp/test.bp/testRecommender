@@ -1,0 +1,16 @@
+$INCLUDE books.inc u2_recommender.h
+
+* build
+* CALL u2_recommender_v3(RECOMMEND_ACTION.BUILD, 0, '', '')
+
+* find
+
+*Call u2_recommender_v3(RECOMMEND_ACTION.RECOMMEND, '206',OutData,'')
+*Crt OutData
+*Dc = DCount(OutData<1>,@VM)
+*for This = 1 To Dc
+*  Crt OutData<1, This>:' - ':OutData<2,This>
+*next
+
+Call u2_recommender_v3(RECOMMEND_ACTION.CLEAR,'','','')
+STOP

@@ -1,0 +1,39 @@
+SUBROUTINE u2_getClientPayments( ClientId, PaymentIds, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_getClientPayments
+*  @@Description : Get a list of client payments direct from the index
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$OPTIONS PICK
+$OPTIONS -S
+$INCLUDE u2_common.h
+PaymentIds = ''
+SelectIndex "CLIENT_ID", ClientId From F.PAYMENTS TO 1
+Fin = @False
+Loop
+ReadNext Id From 1 Else Fin = @True
+Until Fin Do
+PaymentIds<-1> = Id
+Repeat
+RETURN
+

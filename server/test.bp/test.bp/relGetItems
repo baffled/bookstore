@@ -1,0 +1,9 @@
+SUBROUTINE relGetItems( W.ACCOUNT, W.FILE, W.ITEMLIST, ErrText)
+
+Open 'VOC' To VOC Then
+  WriteV "[RelGetItems]" On VOC, "BRIAN", -1
+  WriteV "W.ACCOUNT = ":W.ACCOUNT ON VOC,"BRIAN",-1
+  WriteV "W.FILE = ":W.FILE ON VOC,"BRIAN",-1
+End
+                                             
+RETURN

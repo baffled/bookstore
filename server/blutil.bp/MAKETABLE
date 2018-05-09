@@ -1,0 +1,1547 @@
+PROGRAM MakeTable
+*------------------------------------------------------------------------------
+*  @@Name        : maketable
+*  @@Description : Compile a table script
+*  @@Author      : Brian Leach
+*  @@Project     : TOOLS
+*--------------------------------------------------------------------------
+*  Notes
+*  -----
+*  @@INFO{
+*    IMPORTANT - This does not perform any ownership changes.
+*    Make sure you set the UMASK accordingly before running this.
+*  }
+*--------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*
+*  Date        Who  Version     Description
+*  ----        ---  -------     -----------
+*--------------------------------------------------------------------------
+*  Version Stamp
+*  -------------
+VERDATA=''
+VERDATA := 'Version=001000030;'
+VERDATA := 'VerBeta=;'
+VERDATA := 'VerDate=16570;'
+VERDATA := 'VerProd=BLUTILS;'
+VERDATA := 'VerTM=;'
+VERDATA := 'VerCopy=2016 Brian Leach Consulting Limited;'
+VERDATA := 'VerCo=Brian Leach Consulting Limited;'
+VERDATA := 'VerDesc=Create table from script;'
+VERDATA := 'CatName=MakeTable;'
+VERDATA := 'VerModule=GENERAL;'
+VERDATA := 'VerModVer=001000030;'
+VERDATA := 'VerHist=13 MAY 13 1.0.26 auto;'
+*--------------------------------------------------------------------------
+! The MIT License
+! ===============
+! Copyright (c) 2015 Brian Leach
+!
+! Permission is hereby granted, free of charge, to any person obtaining a copy
+! of this software and associated documentation files (the "Software"), to deal
+! in the Software without restriction, including without limitation the rights
+! to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+! copies of the Software, and to permit persons to whom the Software is
+! furnished to do so, subject to the following conditions:
+!
+! The above copyright notice and this permission notice shall be included in
+! all copies or substantial portions of the Software.
+!---------------------------------------------------------------------------
+! DISCLAIMER:
+!
+! The SOFTWARE is being delivered to you "AS IS" and BRIAN LEACH makes no
+! warranty as to its use or performance. BRIAN LEACH AND ITS SUPPLIERS DO NOT
+! WARRANT THE PERFORMANCE OR RESULTS YOU MAY OBTAIN BY USING THE SOFTWARE OR
+! DOCUMENTATION. BRIAN LEACH AND ITS SUPPLIERS MAKE NO WARRANTIES, EXPRESS OR
+! IMPLIED, AS TO NONINFRINGEMENT OF THIRD PARTY RIGHTS, MERCHANTABILITY, OR
+! FITNESS FOR ANY PARTICULAR PURPOSE. IN NO EVENT WILL BRIAN LEACH OR ITS
+! SUPPLIERS BE LIABLE TO YOU FOR ANY CONSEQUENTIAL, INCIDENTAL OR SPECIAL DAMAGES,
+! INCLUDING ANY LOST PROFITS OR LOST SAVINGS, EVEN IF A BRIAN LEACH REPRESENTATIVE
+! HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES, OR FOR ANY CLAIM BY ANY
+! THIRD PARTY.
+!---------------------------------------------------------------------------
+EQU True            To 1
+EQU False           To 0
+EQU TAB             To Char(9)
+EQU LF              To Char(10)
+EQU FF              To Char(12)
+EQU CR              To Char(13)
+EQU ESC             To Char(27)
+EQU ZERO            To Char(0)  
+EQU FM              To Char(254)
+EQU VM              To Char(253)
+EQU SVM             To Char(252)
+EQU CRLF            To CHAR(13):CHAR(10)
+EQU BIG             To 999
+EQU HUGE            To 99999999
+Prompt ""
+$OPTIONS PICK
+VOCNAME = "VOC"
+EQU MAX_FIELDS To 5000
+EQU MAX_PHRASES To 100
+EQU MAX_DEFAULTS TO 100
+COMMON /MAKETABLE/ FILEDATA, TABLENAME
+COMMON /MAKETABLE/ FIELDRECS(MAX_FIELDS)
+COMMON /MAKETABLE/ PHRASES(MAX_PHRASES)
+COMMON /MAKETABLE/ DEFAULTS(MAX_DEFAULTS)
+EQU INI.NAME TO 'MAKETABLE.INI'
+EQU FILE.DESCRIPTION To 1
+EQU FILE.TYPE To 2
+EQU FILE.MODULO To 3
+EQU FILE.SEPARATION To 4
+EQU FILE.READTRIGGER To 5
+EQU FILE.WRITETRIGGER To 6
+EQU FILE.DELETETRIGGER To 7
+EQU FILE.SUBJECT To 8
+EQU FILE.SELECTION To 9
+EQU FILE.SYNACCT To 10
+EQU FILE.SYNONYM To 11
+EQU FILE.DATAPOINTER To 12
+EQU FILE.DYNAMIC To 13
+EQU FILE.PREFIX To 14
+EQU FILE.DATAPATH To 15
+EQU FILE.KEYWORD TO 21
+EQU FILE.KEYVALUE TO 22
+EQU DICT.TYPE To 1
+EQU DICT.CONTENT To 2
+EQU DICT.CONV To 3
+EQU DICT.COLHEAD To 4
+EQU DICT.FORMAT To 5
+EQU DICT.MS To 6
+EQU DICT.ASSOC To 7
+EQU DICT.SQLTYPE To 8
+EQU DICT.PHEAD    TO 3
+EQU DICT.PMS      TO 5
+EQU DICT.PCONV    TO 7
+EQU DICT.CORREL   TO 8
+EQU DICT.PJUST    TO 9
+EQU DICT.PLEN     TO 10
+EQU DICT.LEN      TO 20
+EQU DICT.JUST     TO 21
+EQU DICT.DEPENDS  To 23
+EQU DICT.SHORT    TO 24
+EQU DICT.KEYWORD  TO 25
+EQU DICT.KEYVALUE TO 26
+EQU DATEFORMAT    TO DEFAULTS(1)
+EQU TIMEFORMAT  TO DEFAULTS(2)
+EQU NUMBERFORMAT  TO DEFAULTS(3)
+EQU MONEYFORMAT  TO DEFAULTS(4)
+EQU DEFAULT.TYPE TO DEFAULTS(5)
+EQU DEFAULT.MODULO TO DEFAULTS(6)
+EQU DEFAULT.SEPARATION TO DEFAULTS(7)
+EQU INCLUDEFILE TO DEFAULTS(8)
+EQU CONSTFILE  TO DEFAULTS(9)
+EQU NAMESPACE TO DEFAULTS(10)
+EQU DEF.KEYS   TO DEFAULTS(11)
+EQU DEF.VALUES TO DEFAULTS(12)
+EQU ADDIN.INIT TO 1
+EQU ADDIN.TABLE TO 2
+EQU OUT.INIT.FILE.KEYS TO 1
+EQU OUT.INIT.FILE.TOKENS TO 2
+EQU OUT.INIT.FIELD.KEYS TO 3
+EQU OUT.INIT.FIELD.TOKENS TO 4
+EQU STD.NAME.GLOBALCONTROL To "blCONTROL"
+EQU STD.NAME.LOCALCONTROL  To "blLOCAL"
+EQU STD.NAME.AUDITFILE     To "blAUDIT"
+EQU STD.NAME.MAPFILE       To 'blMAP'
+MAT FIELDRECS = ''
+MAT PHRASES = ''
+MAT DEFAULTS = ''
+* Defaults
+DATEFORMAT = "D4"
+TIMEFORMAT = "MTS"
+NUMBERFORMAT = "MD0"
+MONEYFORMAT = "MD2"
+DEFAULT.TYPE = 18
+DEFAULT.MODULO = 503
+DEFAULT.SEPARATION = 2
+INCLUDEFILE = ""
+OldIncludeFormat = @False
+BUILD.ALLFIELDS = @False
+CONSTFILE = ""
+PACKAGE = ""
+NAMESPACE = @WHO
+INCLUDE.DELIM = '_'
+HasMD = @True
+JAVAFILE  = ""
+JAVATEMPLATE = ""
+Addins = ''
+DeferCompile = @True
+CompileTables = ''
+CompileFields = ''
+NoCompiles = 0
+NoAddins = 0
+* additional keywords registered by addins
+FileKeywords = ''
+FieldKeywords = ''
+NoFileKeywords = ''
+NoFieldKeywords = ''
+CFILE = 'MVS.LCFILE'
+CDICT = 'CD'
+ProgramName = 'MakeTable'
+Open VOCNAME To F.VOC Else
+HasMD = @False
+End
+If Not(HasMD) Then     
+Crt "Cannot open ":VOCNAME
+STOP
+End
+GoSub GetTCLArgs
+If ItemList = "" Then
+GoSub Usage
+STOP
+End
+
+GoSub SetupCFile
+GoSub LoadAddins
+TableList = ""
+NoIncludes = @FALSE
+NoQFiles = @FALSE
+NoNewFiles = @FALSE
+NoOptions = DCount(Options,@FM)
+For I = 1 to NoOptions
+Begin Case
+Case Options<I> = 'TABLE'
+TableList<-1> = Options<I+1>
+Case Options<I>[1,5] = 'NOINC'
+NoIncludes = @TRUE
+Case Options<I>[1,3] = 'NOQ'
+NoQFiles = @TRUE
+Case Options<I> = 'NONEW'
+NoNewFiles = @TRUE
+End Case
+Next
+F.SCRIPTS = FL
+ScriptFile = FileName
+NoScripts = DCount(ItemList,@fm)
+For ScriptNo = 1 To NoScripts
+Remove ScriptName From ItemList Setting DVAR
+GoSub DoScript
+Next
+If DeferCompile Then
+GoSub RunCompileAtEnd
+End
+RETURN
+*--------------------------------------------------------------------------
+* DoScript - parse a table definition script
+*--------------------------------------------------------------------------
+DoScript:
+Read Script From F.SCRIPTS, ScriptName Else
+Crt "Missing script ":ScriptName
+Return
+End
+NoLines = Dcount(Script,@FM)
+NewRec = ""
+ToolStarts = ""
+NewLineCount = 0
+InTool = False
+NoTools = 0
+For ThisLine = 1 To NoLines
+OrigLine = Script<ThisLine>
+Line = TrimF(OrigLine)
+Begin Case
+Case Line[1,1] = "*"
+Case Line[1,1] = "!"
+Case Line[1,1] = "#"
+Case 1
+NewLineCount += 1
+NewRec<NewLineCount> = OrigLine
+If Not(InTool) Then
+If UpCase(Field(Line," ",1,1)) = "BEGIN" Then
+InTool = True
+NoTools += 1
+ToolStarts<1,NoTools> = NewLineCount
+End
+If UpCase(Field(Line," ",1,1)) = "$INCLUDE" Then
+Line = Trim(Line)
+IncId = Field(Line,' ',3,1)
+If IncId = '' Then
+IncFL = FileName
+IncId = Field(Line,' ',2,1)
+End Else
+IncFL = Field(Line,' ',2,1)
+End
+Open IncFL To TFL THen
+Read IncRec From TFL, IncId Then
+Script<ThisLine> = IncRec
+ThisLine -= 1
+NoLines = DCOunt(Script,@FM)
+End
+End
+End
+End Else
+If UpCase(Field(Line," ",1,1)) = "ENDDEFN" Then
+InTool = False
+ToolStarts<2,NoTools> = NewLineCount
+End
+End
+End Case
+Next
+If NoTools = False Then
+Crt "Nothing to Parse"
+RETURN
+End
+If InTool Then
+Crt "ERROR: BEGIN with no ENDDEFN"
+RETURN
+End
+AllDone = @False
+For ThisTool = 1 To NoTools
+Defn = Field(NewRec,@FM, ToolStarts<1,ThisTool>, (ToolStarts<2,ThisTool> - ToolStarts<1,ThisTool>))
+Line = TrimF(Field(Defn<1>," ",2,BIG))
+Word = UpCase(Field(Line," ",1,1))
+If Field(Line," ",2,1) <> "" Then
+Defn<1> = Field(Line," ",2,BIG)
+End Else
+Del Defn<1>
+End
+ToolName = Field(Trim(Defn<1>)," ",1,1)
+Begin Case
+Case Word = "TABLE"
+If TableList <> '' Then
+Locate ToolName In TableList Setting Pos Then
+GoSub DoTable
+End
+End Else
+GoSub DoTable
+End
+Case Word = "DEFAULT"
+GoSub DoDefault
+If ErrText <> '' then
+ThisTool = NoTools
+End
+Case 1
+* ignore other tool entries in this script
+End Case
+Next
+Return
+*--------------------------------------------------------------------------
+* DoDefault : set global defaults for e.g. formats
+*--------------------------------------------------------------------------
+DoDefault:
+ErrText = ''
+GoSub ParseDefault
+If ErrText <> '' Then
+Crt "Error parsing defaults - ": ErrText
+End
+Return
+*--------------------------------------------------------------------------
+* DoTable
+*--------------------------------------------------------------------------
+DoTable:
+ErrText = ""
+GoSub ParseTable
+If ErrText <> "" Then
+Crt "Error parsing table ":TableName
+Return
+End
+GoSub MakeTable
+TABLENAME = TableName
+FILEDATA = TableRec
+For ThisAddin = 1 To NoAddins
+AddinName = Addins<ThisAddin>
+Action = ADDIN.TABLE
+IData = ''
+OData = ''
+Call @AddinName(Action, IData, OData, ErrText)
+Next
+Return
+*------------------------------------------------------------------------------
+*   CreateFile
+*------------------------------------------------------------------------------
+CreateFile:
+Typ = DEFAULT.TYPE
+Mod = DEFAULT.MODULO
+Sep = DEFAULT.SEPARATION
+Dynamic = @False
+Directory = @False
+If TableRec<FILE.TYPE> Then
+Typ = TableRec<FILE.TYPE>
+End
+If TableRec<FILE.MODULO> Match "1N0N" Then
+Mod = TableRec<FILE.MODULO>
+End
+If TableRec<FILE.SEPARATION> Match "1N0N" Then
+Sep = TableRec<FILE.SEPARATION>
+End
+If TableRec<FILE.DYNAMIC> Or (TableRec<FILE.TYPE> = 30) Or (TableRec<FILE.TYPE> = 'DYNAMIC') Then
+Dynamic = @True
+End
+If (TableRec<FILE.TYPE> = 1) Or (TableRec<FILE.TYPE> = 19) Or (TableRec<FILE.TYPE> = 'DIRECTORY') Then
+Directory = @True
+End
+ErrText = ""
+If Dynamic Then
+Execute CFILE:" ":TableName:" 11,1 DYNAMIC"
+End Else
+Valid = @False
+Begin Case
+Case Not(Typ Match "1N0N")
+Case Typ >= 1 And Typ <= 19
+Valid = @True
+Case Typ = 30
+Valid = @True
+Case Typ = 25
+Valid = @True
+End Case
+If Not(Valid) Then
+Typ = DEFAULT.TYPE
+End
+Execute CFILE:" ":TableName:" 11,1 ":Mod:",":Sep:",":Typ
+End
+Return
+*------------------------------------------------------------------------------
+*   GetNext - Get the next token
+*------------------------------------------------------------------------------
+GetNext:
+Word = ''
+UWord = ''
+SWord = ''
+WordNo += 1
+If WordNo > NoWords Then
+AllDone = @True
+Return
+End
+Word = Words<WordNo>
+UWord = UpCase(Word)
+Begin Case
+Case Word[1,1] = '{'
+SWord = Word[2, Len(Word)-2]
+Case Index(Delims<1>,Word[1,1],1)
+SWord = Word[2, Len(Word)-2]
+Case 1
+SWord = Word
+End Case
+Return
+*--------------------------------------------------------------------------
+* GetTCLArgs - invoke standard TCL parsing
+*--------------------------------------------------------------------------
+GetTCLArgs:
+ItemList = ""
+Options = ""
+OptionList = 'TABLE' :@FM : 1
+OptionList<1,2> = 'NOINCLUDES'
+OptionList<2,2> = '0'
+OptionList<1,3> = 'NOQFILES'
+OptionList<2,3> = '0'
+OptionList<1,4> = 'NONEW'
+OptionList<2,4> = '0'
+GoSub tclext.h
+Return
+*---------------------------------------------------------------------------
+* MakeAssociations
+*---------------------------------------------------------------------------
+MakeAssociations:
+DepList = ""
+AssocList = ""
+For I = 1 To NoFields
+If FIELDRECS(I)<DICT.DEPENDS> <> "" Then
+Locate FIELDRECS(I)<DICT.DEPENDS> In DepList<1> By "AR" Setting Pos Else
+Ins FIELDRECS(I)<DICT.DEPENDS> Before DepList<1,Pos>
+Ins "" Before DepList<2,Pos>
+Ins "" Before DepList<3,Pos>
+End
+DepList<2,Pos,-1> = I
+DepList<3,Pos,-1> = FieldNames<I>
+End
+If FIELDRECS(I)<DICT.ASSOC> <> "" Then
+Locate FIELDRECS(I)<DICT.ASSOC> In AssocList<1> By "AL" Setting Pos Else
+Ins FIELDRECS(I)<DICT.ASSOC> Before AssocList<1,Pos>
+Ins "" Before AssocList<2,Pos>
+End
+AssocList<2,Pos,-1> = FieldNames<I>
+End
+Next
+NoDeps = DCount(DepList<1>,@vm)
+For I = 1 to NoDeps
+PaName = DepList<1,I>:".ASSOC"
+Pa = "PH"
+ReadU DictRec From DFL, DepList<1,I> Then
+Pa<2> = DepList<1,I>
+DictRec<DICT.ASSOC> = PaName
+Write DictRec On DFL, DepList<1,I>
+NoDeps = DCount(DepList<2,I>, @svm)
+For J = 1 To NoDeps
+Pa<2> := " ":DepList<3,I,J>
+ReadU DictRec From DFL, DepList<3,I,J> Then
+DictRec<DICT.ASSOC> = PaName
+Write DictRec On DFL, DepList<3,I,J>
+End
+Next
+Write Pa On DFL, PaName
+End Else
+Release DFL, DepList<1,I>
+End
+Next
+NoAssocs = DCount(AssocList<1>,@VM)
+For I = 1 to NoAssocs
+PAName = AssocList<1,I>
+PA = "PH"
+ReadU PA From DFL, AssocList<1,I> Else
+PA = "PH"
+End
+! UniData can't Convert a field
+Temp = PA<2>
+Convert " " To @VM In Temp
+PA<2> = Temp
+For J = 1 to DCount(AssocList<2,I>,@SVM)
+FName = AssocList<2,I,J>
+Locate FName In PA<2> Setting Pos Else
+PA<2,-1> = FName
+End
+ReadU DictRec From DFL, FName Then
+DictRec<DICT.ASSOC> = AssocList<1,I>
+Write DictRec On DFL, FName
+End Else
+Release DFL, FName
+End
+Next
+Convert @VM To " " In PA
+Write PA On DFL, AssocList<1,I>
+Next
+Return
+*--------------------------------------------------------------------------
+* MakeTable
+*--------------------------------------------------------------------------
+MakeTable:
+Crt Str("-",@CrtWide-2)
+Crt "Table : ":TableName
+Crt Str("-",@CrtWide-2)
+If NoQFiles And HasMD Then
+Read TVOCRec From F.VOC, TableName Then
+First = OConv(Trim(TVOCRec<1>)[1,1],'MCU')
+If First = 'Q' Then
+Return
+End
+End
+End
+If NoNewFiles Then
+Open TableName To TFL Else
+Return
+End
+End
+Open "DICT",TableName To DFL Then
+IsOpen = True
+End Else
+Begin Case
+Case TableRec<FILE.SYNONYM> <> ""      ; * Q Pointer
+If HasMD Then        
+Write "Q":@FM:TableRec<FILE.SYNACCT>:@FM:TableRec<FILE.SYNONYM> On F.VOC, TableName
+End
+Open "DICT",TableName To DFL Else
+Crt "Cannot resolve synonym file"
+Return
+End
+Case TableRec<FILE.DATAPOINTER> <> ""  ; * Local dict remote file
+* Normalize the path for different platforms
+Open TableRec<FILE.DATAPOINTER> To TFL Else
+Crt 'Cannot open file at ':TableRec<FILE.DATAPOINTER>
+Return
+End
+If HasMD Then
+Status FStat From TFL Else
+Crt "Cannot get status information for ":TableRec<FILE.DATAPOINTER>
+Return
+End
+Read VRec From F.VOC, TableName Then
+VRec<2> = FStat<27>
+Write VRec On F.VOC, TableName
+End
+End
+Open "DICT", TableName To DFL Then
+IsOpen = True
+end Else
+Crt "Cannot open DICT ":TableName
+Return
+End
+Case TableRec<FILE.DATAPATH> <> ""  ; * Local dict remote file (new)
+* Normalize the path for different platforms
+TablePath = TableRec<FILE.DATAPATH>
+GoSub ostype.h
+If ostype.Windows Then
+Delim = '\'
+ODelim = '/'
+End Else
+Delim = '/'
+ODelim = '\'
+End
+Convert ODelim To Delim In TablePath
+TargetPath = TablePath : Delim : TableName
+OpenPath TablePath To TFL Else
+Crt 'Cannot open path ':TablePath ;* parent
+Return
+End
+* create the file locally and move it
+GoSub CreateFile
+TargetPath = TablePath : Delim : TableName
+OpenPath TableName To TFL Else
+Crt 'Cannot create local file ':TableName
+Return
+End
+Status FStat From TFL Else
+Crt "Cannot get status information for ":TableRec<FILE.DATAPATH>
+Return
+End
+RealPath = FStat<27> ;* allow for name mangling
+Convert ODelim to Delim In RealPath ;* UniVerse BUG
+Close TFL
+GoSub MoveFile
+OpenPath TargetPath To TFL Else
+Crt 'Cannot open moved file at ':TargetPath
+Return
+End
+Read VRec From F.VOC, TableName Then
+VRec<2> = TargetPath
+Write VRec On F.VOC, TableName
+End
+Open "DICT", TableName To DFL Then
+IsOpen = True
+end Else
+Crt "Cannot open DICT ":TableName
+Return
+End
+Case 1
+GoSub CreateFile
+* Windows sometimes needs to catch up ...
+Sleep 1
+Open "DICT", TableName To DFL Else
+Crt "Error Opening DICT ":TableName
+Return
+End
+End Case
+End
+If HasMD Then
+ReadU FileVOCRec From F.VOC, TableName Then
+FileVOCRec<1> = TrimF(FileVOCRec<1>)[1,1]:" ":TableRec<FILE.SUBJECT>
+Write FileVOCRec On F.VOC, TableName Else
+Crt "Cannot write file record"
+RETURN
+End
+End Else
+Release F.VOC, TableName
+End
+End
+ITypeList = ""
+DTypeList = ""
+ATypeList = ''
+For I = 1 to NoFields
+DRec = FIELDRECS(I)
+First = DRec<DICT.TYPE>
+If DRec<DICT.SHORT> <> '' Then
+DRec<DICT.TYPE> = DRec<DICT.TYPE>:' ':DRec<DICT.SHORT>
+End
+* Force single value fields or BUILD.INDEX breaks on UniVerse
+If DRec<DICT.MS> = '' Then
+DRec<DICT.MS> = 'S'
+End
+Begin Case
+Case First = 'D'
+DTypeList<-1> = FieldNames<I>
+DRec<DICT.FORMAT> = DRec<DICT.LEN> : DRec<DICT.JUST>
+DRec = Field(DRec, @FM, 1, DICT.SQLTYPE)
+Write DRec On DFL, FieldNames<I>
+Case First = 'I'
+ITypeList<-1> = FieldNames<I>
+DRec<DICT.FORMAT> = DRec<DICT.LEN> : DRec<DICT.JUST>
+DRec = Field(DRec, @FM, 1, DICT.SQLTYPE)
+Write DRec On DFL, FieldNames<I>
+Case First = 'A' Or First = 'S'
+PRec = ''
+PRec<DICT.TYPE> = DRec<DICT.TYPE>
+PRec<DICT.CONTENT> = DRec<DICT.CONTENT>
+If PRec<DICT.CONTENT> = '' Then
+PRec<DICT.CONTENT> = 0
+End
+PRec<DICT.PHEAD> = DRec<DICT.COLHEAD>
+PRec<DICT.PCONV> = DRec<DICT.CONV>
+PRec<DICT.CORREL> = DRec<DICT.CORREL>
+PRec<DICT.PMS> = DRec<DICT.MS>
+PRec<DICT.PLEN> = DRec<DICT.LEN>
+PRec<DICT.PJUST> = DRec<DICT.JUST>
+If (First = 'A') And (DRec<DICT.CORREL> = '') Then
+ATypeList<-1> = First
+End
+Write PRec On DFL, FieldNames<I>
+End Case
+Next
+For I = 1 to NoPhrases
+Write "PH":@FM:PHRASES(I) On DFL, PhraseNames<I>
+Next
+If BUILD.ALLFIELDS Then
+FieldList = FieldNames
+Convert @FM To " " In FieldList
+Write "PH":@FM:FieldList On DFL,"ALL_FIELDS"
+DTypeNames = DTypeList
+Convert @FM To " " In DTypeNames
+Write "PH":@FM:DTypeNames On DFL,"DATA_FIELDS"
+End
+GoSub MakeAssociations
+NoITypes = DCount(ITypeList,@fm)
+Begin Case
+Case DeferCompile
+If NoITypes > 0 Then
+NoCompiles += 1
+TList = ITypeList
+Convert @FM To @VM In TList
+CompileTables<NoCompiles> = TableName
+CompileFields<NoCompiles> = TList
+End
+Case 1
+For I = 1 To NoITypes
+Execute CDICT:" ":TableName:" ":ITypeList<I>
+Next
+End Case
+If (INCLUDEFILE:CONSTFILE:JAVAFILE) <> "" Then
+GoSub MakeInclude
+End
+NoIndices = DCount(IndexList,@FM)
+If NoIndices > 0 Then
+Open TableName To F.INDEX Else
+Return
+End
+ExistingIndices = Indices(F.INDEX)
+End
+For I = 1 To NoIndices
+ThisIndex = IndexList<I>
+Locate ThisIndex In ExistingIndices Setting Pos Else
+GoSub MakeIndex
+End
+Next
+Return
+* ------------------------------------------------------------------------------
+* MoveFile
+* ------------------------------------------------------------------------------
+MoveFile:
+If ostype.Windows Then
+Cmd = 'move ':RealPath:' ':TablePath
+Cmd = "DOS /C '" : Cmd: "'"
+End Else
+Cmd = 'mv ':RealPath:' ':TablePath
+Cmd = 'SH -c "': Cmd :'"'
+End
+Perform Cmd
+Return
+* ------------------------------------------------------------------------------
+* LoadAddins - get a list of addins for post-processing from blCONTROL
+*              MAKETABLE.INI to allow for site-specific processing
+* ------------------------------------------------------------------------------
+LoadAddins:
+IniRec = ''
+Open STD.NAME.LOCALCONTROL To F.INI Then
+Read IniRec From F.INI, INI.NAME Else
+IniRec = ''
+End
+End
+If IniRec = '' Then
+Open STD.NAME.GLOBALCONTROL To F.INI Then
+Read IniRec From F.INI, INI.NAME Else
+IniRec = ''
+End
+End
+End
+If IniRec = '' Then
+Return
+End
+Section = 'General'
+Header  = 'Addins'
+GoSub getini.h
+Convert ", " To @FM In IniValue
+Addins = IniValue
+NoAddins = DCount(Addins,@FM)
+For ThisAddin = 1 To NoAddins
+Addin = Addins<ThisAddin>
+Action = ADDIN.INIT
+OData = ''
+ErrText = ''
+Call @Addin(Action, '', OData, ErrText)
+If ErrText Then
+Crt ErrText
+Return
+End
+NFileKeys = DCount(OData<OUT.INIT.FILE.KEYS>,@VM)
+For This = 1 to NFileKeys
+NoFileKeywords += 1
+FileKeywords<1, NoFileKeywords> = OData<OUT.INIT.FILE.KEYS, This>
+FileKeywords<2,NoFileKeywords> = OData<OUT.INIT.FILE.TOKENS, This>
+Next
+NFieldKeys = DCount(OData<OUT.INIT.FIELD.KEYS>,@VM)
+For This = 1 to NFieldKeys
+NoFieldKeywords += 1
+FieldKeywords<1, NoFieldKeywords> = OData<OUT.INIT.FIELD.KEYS, This>
+FieldKeywords<2, NoFieldKeywords> = OData<OUT.INIT.FIELD.TOKENS, This>
+Next
+Next
+Return
+*------------------------------------------------------------------------------
+* MakeInclude : note this includes ALL entries in the dictionary, not just the
+*               table definition
+*------------------------------------------------------------------------------
+MakeInclude:
+If NoIncludes Then
+Return
+End
+Dicts = ""
+Prefix = TableRec<FILE.PREFIX>
+If Prefix = '' Then
+Prefix = TableName
+End
+UPrefix = UpCase(Prefix)
+MaxWidth = 0
+Fin = @False
+Select DFL
+Loop
+ReadNext Id Else Fin = @True
+Until Fin Do
+Read Rec From DFL, Id Else Rec = ""
+First = OConv(Trim(Rec),"MCU")[1,1]
+AddThis = @False
+Begin Case
+Case First = "D"
+Fno = Rec<DICT.CONTENT>
+If Fno Match "1N0N" Then
+AddThis = @True
+End
+Case First = "A" And Rec<DICT.CORREL> = ''
+Fno = Rec<DICT.CONTENT>
+If Fno Match "1N0N" Then
+AddThis = @True
+End
+AddThis = @True
+End Case
+If AddThis Then
+If Fno > 0 Then
+Locate Fno In Dicts<1> By "AR" Setting Pos Else
+Ins Fno Before Dicts<1,Pos>
+Ins "" Before Dicts<2,Pos>
+End
+LocalId= OConv(Id,"MCU")
+Convert "/+-&@" To "" In LocalId
+LocalWidth = Len(LocalId)
+If LocalWidth > MaxWidth Then
+MaxWidth = LocalWidth
+End
+Locate LocalId In Dicts<2,Pos> By "AL" Setting LPos Else
+Ins LocalId Before Dicts<2,Pos,LPos>
+End
+End
+End
+Repeat
+NoFields = DCount(Dicts<1>,@VM)
+Mask = "L#":MaxWidth
+If INCLUDEFILE <> "" Then
+IncRec = "!INCLUDE"
+IncRec<-1> = '!------------------------------------------------------------------------------'
+IncRec<-1> = '!  Include file for : ':TableName
+IncRec<-1> = '!  Generated on     : ':Oconv(Date(),"D4")
+IncRec<-1> = '!  Generated by     : MakeTable script ':ScriptFile:' ':ScriptName
+IncRec<-1> = '!------------------------------------------------------------------------------'
+For I = 1 To NoFields
+NoDicts = DCount(Dicts<2,I>,@SVM)
+For J = 1 TO NoDicts
+LocalId = (Dicts<2,I,J> Mask)
+Convert '_.' To INCLUDE.DELIM:INCLUDE.DELIM IN LocalId
+IncRec<-1> = "EQU ":UPrefix:'.':LocalId:" TO ":Dicts<1,I>
+Next
+Next
+Write IncRec On F.INCLUDE, TableName:".h"
+Crt "Written ":INCLUDEFILE:" ":TableName:".h"
+End
+If CONSTFILE <> "" Then
+Convert "." To "_" In Prefix
+ConstRec = "using System;"
+ConstRec<-1> = "using System.Collections.Generic;"
+ConstRec<-1> = "using System.Text;"
+ConstRec<-1> = '//------------------------------------------------------------------------------'
+ConstRec<-1> = '//  Include file for : ':TableName
+ConstRec<-1> = '//  Generated on     : ':Oconv(Date(),"D4")
+ConstRec<-1> = '//  Generated by     : MakeTable script ':ScriptFile:' ':ScriptName
+ConstRec<-1> = '//------------------------------------------------------------------------------'
+ConstRec<-1> = "namespace ": NAMESPACE
+ConstRec<-1> = "{"
+ConstRec<-1> = "    public partial class " : Prefix
+ConstRec<-1> = "    {"
+NoFields = DCount(Dicts<1>,@VM)
+For I = 1 To NoFields
+NoDicts = DCount(Dicts<2,I>,@SVM)
+For J = 1 TO NoDicts
+ConstRec<-1> = "      public const int ":Dicts<2,I,J>:" = ":Dicts<1,I>:";"
+Next
+Next
+ConstRec<-1> = "    }"
+ConstRec<-1> = "}"
+Write ConstRec On F.CONST, TableName:".cs"
+Crt "Written ":CONSTFILE:" ":TableName:".cs"
+End
+If JAVAFILE <> "" Then
+Convert "." To "_" In Prefix
+JavaClassName = Prefix:'Fields'
+JavaFields = ''
+NoFields = DCount(Dicts<1>,@VM)
+For I = 1 To NoFields
+NoDicts = DCount(Dicts<2,I>,@SVM)
+For J = 1 TO NoDicts
+JavaFields<-1> = "      public static final int ":Dicts<2,I,J>:" = ":Dicts<1,I>:";"
+Next
+Next
+If JAVATEMPLATE <> '' Then
+ConstRec = JAVATEMPLATE
+ConstRec = Change(ConstRec,'{PACKAGE}', PACKAGE)
+ConstRec = Change(ConstRec,'{PREFIX}', Prefix)
+ConstRec = Change(ConstRec,'{TABLE}', TableName)
+ConstRec = Change(ConstRec,'{FIELDS}', JavaFields)
+End Else
+ConstRec = "package ":PACKAGE:";"
+ConstRec<-1> = 'public class ':JavaClassName:' {'
+ConstRec<-1> = JavaFields
+ConstRec<-1> = "}"
+End
+Write ConstRec On F.JAVA, JavaClassName:".java"
+Crt "Written ":JAVAFILE:" ":JavaClassName:".java"
+End
+Return
+*---------------------------------------------------------------------------
+* MakeIndex
+*---------------------------------------------------------------------------
+MakeIndex:
+ExLine = 'CREATE.INDEX ':TableName:' ':ThisIndex:' NO.NULLS'
+Perform ExLine
+ExLine = 'BUILD.INDEX ':TableName:' ':ThisIndex
+Perform ExLine
+Return
+*------------------------------------------------------------------------------
+* NewField
+*------------------------------------------------------------------------------
+NewField:
+NoFields += 1
+FieldNames<NoFields> = SWord
+FIELDRECS(NoFields)<DICT.LEN> = "10"
+FIELDRECS(NoFields)<DICT.JUST> = "L"
+FIELDRECS(NoFields)<DICT.COLHEAD> = OConv(SWord,"MCT")
+Return
+*--------------------------------------------------------------------------
+* ParseDefault
+*--------------------------------------------------------------------------
+ParseDefault:
+Words = ""
+Delims = ""
+WhiteSpace = ""                    ; * just applies standard whitespace
+WordNo = 0
+AllDone = False
+SplitLine = Defn
+GoSub Split
+NoWords = DCount(Words,@fm)
+Loop
+Until AllDone Do
+GoSub GetNext
+Begin Case
+Case UWord = "TYPE"
+GoSub GetNext
+DEFAULT.TYPE = SWord
+Case UWord = "MODULO"
+GoSub GetNext
+DEFAULT.MODULO = SWord
+Case UWord = "SEPARATION"
+GoSub GetNext
+DEFAULT.SEPARATION = SWord
+Case UWord = "DATEFORMAT"
+GoSub GetNext
+DATEFORMAT = SWord
+Case UWord = "TIMEFORMAT"
+GoSub GetNext
+TIMEFORMAT = SWord
+Case UWord = "NUMBERFORMAT"
+GoSub GetNext
+NUMBERFORMAT = SWord
+Case UWord = "MONEYFORMAT"
+GoSub GetNext
+MONEYFORMAT = SWord
+Case UWord = "INCLUDE" or UWord = "INCLUDEFILE"
+GoSub GetNext
+INCLUDEFILE = SWord
+Open INCLUDEFILE To F.INCLUDE Else
+ErrText = 'Cannot open INCLUDE File ':INCLUDEFILE
+End
+Case UWord = "CONST" Or UWord = "CONSTFILE"
+GoSub GetNext
+CONSTFILE = SWord
+Open CONSTFILE To F.CONST Else
+ErrText = "Cannot open CONST file ":CONSTFILE
+End
+Case UWord = "JAVA" Or UWord = "JAVAFILE"
+GoSub GetNext
+JAVAFILE = SWord
+Open JAVAFILE To F.JAVA Else
+ErrText = "Cannot open JAVA file ":JAVAFILE
+End
+Case UWord = "JAVATEMPLATE"
+GoSub GetNext
+Open SWord To TFL Then
+GoSub GetNext
+Read JAVATEMPLATE From TFL, SWord Else
+ErrText = 'Cannot read JAVA template ':SWord
+End
+End Else
+ErrText = 'Cannot open JAVA Template file ':SWord
+End
+Case UWord = "PACKAGE"
+GoSub GetNext
+PACKAGE = SWord
+Case UWord = "BUILDALL"
+BUILD.ALLFIELDS = @True
+Case UWord = "NAMESPACE"
+GoSub GetNext
+NAMESPACE = SWord
+Case UWord = 'DELIM'
+GoSub GetNext
+INCLUDE.DELIM = SWord
+Case 1
+Locate UWord In FileKeywords<1> Setting Pos Then
+NoTokens = FileKeywords<2,Pos>
+Dc = DCount(DEF.KEYS,@FM) + 1
+DEF.KEYS<Dc> = UWord
+For This = 1 To NoTokens
+GoSub GetNext
+DEF.VALUES<Dc, This> = SWord
+Next
+End
+End Case
+Repeat
+If ErrText <> "" Then
+Return
+End
+Return
+*--------------------------------------------------------------------------
+* ParseTable
+*--------------------------------------------------------------------------
+ParseTable:
+TableName = Trim(Defn<1>)
+If TableList <> '' then
+Locate TableName In TableList Setting Pos Else
+Return
+End
+End
+MAT FIELDRECS = ""
+MAT PHRASES = ""
+Words = ""
+Delims = ""                        ; * just applies standard delimiters
+WhiteSpace = ""                    ; * just applies standard whitespace
+TableRec = ""
+FieldNames = ""
+PhraseNames = ""
+WordNo = 0
+DisplayList= ""
+IndexList = ""
+NoFields = ""
+NoPhrases = 0
+AllDone = False
+SplitLine = Defn
+GoSub Split
+NoFields = 0
+TableRec = ""
+Del Words<1>
+NoWords = DCount(Words,@fm)
+Loop
+Until AllDone Do
+GoSub ParseWord
+Repeat
+If ErrText <> "" Then
+Return
+End
+Return
+*------------------------------------------------------------------------------
+*    Parse - Parse the file definition
+*------------------------------------------------------------------------------
+ParseWord:
+GoSub GetNext
+Begin Case
+* first the file attributes
+Case UWord = "DESCRIPTION"
+GoSub GetNext
+If NoFields > 0 Then
+FIELDRECS(NoFields)<DICT.SHORT> = SWord
+End Else
+TableRec<FILE.DESCRIPTION> = SWord
+End
+Case UWord = "SUBJECT"
+GoSub GetNext
+TableRec<FILE.SUBJECT> = SWord
+Case UWord = "TYPE"
+GoSub GetNext
+Begin Case
+Case UWord = 'DYNAMIC'
+TableRec<FILE.TYPE> = 30
+TableRec<FILE.DYNAMIC> = @TRUE
+Case UWord = 'DIRECTORY'
+TableRec<FILE.TYPE> = 19
+Case 1
+TableRec<FILE.TYPE> = SWord
+End Case
+Case UWord = "MODULO" Or UWord = "MOD"
+GoSub GetNext
+TableRec<FILE.MODULO> = SWord
+Case UWord = "SEPARATION" Or UWord = "SEP"
+GoSub GetNext
+TableRec<FILE.SEPARATION> = SWord
+Case UWord = "REMOTE"
+GoSub GetNext
+TableRec<FILE.SYNACCT> = SWord
+GoSub GetNext
+TableRec<FILE.SYNONYM> = SWord
+Case UWord = "DATAPOINTER"
+GoSub GetNext
+TableRec<FILE.DATAPOINTER> = SWord
+Case UWord = "DATAPATH"
+GoSub GetNext
+TableRec<FILE.DATAPATH> = SWord
+Case UWord = "DYNAMIC"
+TableRec<FILE.DYNAMIC> = @True
+Case UWord = "DIRECTORY"
+TableRec<FILE.TYPE> = 19
+Case UWord = "PREFIX"
+GoSub GetNext
+TableRec<FILE.PREFIX> = SWord
+Case UWord = 'DELIM'
+GoSub GetNext
+INCLUDE.DELIM = SWord
+* Field details we use
+Case UWord = "FNO"
+GoSub GetNext
+If Not(UWord Match "1N0N") Then
+WordNo -= 1 ;* catch IDS errors
+SWord = 0
+End Else
+Begin Case
+Case FIELDRECS(NoFields)<DICT.TYPE> = "A"
+Case FIELDRECS(NoFields)<DICT.TYPE> = "S"
+Case 1
+FIELDRECS(NoFields)<DICT.TYPE> = "D"
+End Case
+End
+FIELDRECS(NoFields)<DICT.CONTENT> = SWord
+Case UWord = "EXPRESSION" Or UWord = "EXPR"
+GoSub GetNext
+Begin Case
+Case FIELDRECS(NoFields)<DICT.TYPE> = "A"
+FIELDRECS(NoFields)<DICT.CORREL> = SWord
+Case FIELDRECS(NoFields)<DICT.TYPE> = "S"
+FIELDRECS(NoFields)<DICT.CORREL> = SWord
+Case 1
+FIELDRECS(NoFields)<DICT.TYPE> = "I"
+FIELDRECS(NoFields)<DICT.CONTENT> = SWord
+End Case
+Case UWord = "DATE"
+FIELDRECS(NoFields)<DICT.FORMAT> = "12R"
+FIELDRECS(NoFields)<DICT.CONV> = DATEFORMAT
+Case UWord = "MEMO"
+FIELDRECS(NoFields)<DICT.FORMAT> = "70T"
+Case UWord = "NUMERIC" Or UWord = "NUMBER"
+FIELDRECS(NoFields)<DICT.FORMAT> = "8R"
+Case UWord = "TIME"
+FIELDRECS(NoFields)<DICT.FORMAT> = "8R"
+FIELDRECS(NoFields)<DICT.CONV> = TIMEFORMAT
+Case UWord = "MONEY" Or UWord = "CURRENCY"
+FIELDRECS(NoFields)<DICT.FORMAT> = "8R"
+FIELDRECS(NoFields)<DICT.CONV> = MONEYFORMAT
+Case UWord = "BOOLEAN" Or UWord = "BOOL"
+FIELDRECS(NoFields)<DICT.FORMAT> = "1R"
+Case UWord = "POSITIVE"
+FIELDRECS(NoFields)<DICT.FORMAT> = "8R"
+FIELDRECS(NoFields)<DICT.CONV> = NUMBERFORMAT
+Case UWord = "INTEGER"
+FIELDRECS(NoFields)<DICT.FORMAT> = "8R"
+FIELDRECS(NoFields)<DICT.CONV> = NUMBERFORMAT
+Case UWord = "CONV"
+GoSub GetNext
+Convert @FM To @VM In SWord
+FIELDRECS(NoFields)<DICT.CONV> = SWord
+Case UWord = "LEN"
+GoSub GetNext
+FIELDRECS(NoFields)<DICT.LEN> = SWord
+Case UWord = "JUST"
+GoSub GetNext
+FIELDRECS(NoFields)<DICT.JUST> = SWord
+Case UWord = "MVED" Or UWord = "MV"
+FIELDRECS(NoFields)<DICT.MS> = "M"
+Case UWord = "DEPENDS"
+GoSub GetNext
+FIELDRECS(NoFields)<DICT.DEPENDS> = SWord
+Case UWord = "ASSOC"
+GoSub GetNext
+FIELDRECS(NoFields)<DICT.ASSOC> = SWord
+Case UWord = "PRIMARY"
+DisplayList<-1> = FieldNames<NoFields>
+Case UWord = "INDEXED"
+IndexList<-1>= FieldNames<NoFields>
+Case UWord = "COLHEAD"
+GoSub GetNext
+FIELDRECS(NoFields)<DICT.COLHEAD> = Convert("]",@VM,SWord)
+Case (UWord = "FMT") Or (UWord = "FORMAT")
+GoSub GetNext
+FIELDRECS(NoFields)<5> = SWord
+Case (UWord Match "1N0N") Or (UWord Match "'W'1N0N")
+FIELDRECS(NoFields)<DICT.TYPE> = "D"
+FIELDRECS(NoFields)<DICT.CONTENT> = SWord
+*------------------------------------------------------------------------------
+* Settings
+*------------------------------------------------------------------------------
+Case UWord = "DATEFORMAT"
+GoSub GetNext
+DATEFORMAT = SWord
+Case UWord = "TIMEFORMAT"
+GoSub GetNext
+TIMEFORMAT = SWord
+Case UWord = "NUMBERFORMAT"
+GoSub GetNext
+NUMBERFORMAT = SWord
+Case UWord = "MONEYFORMAT"
+GoSub GetNext
+MONEYFORMAT = SWord
+Case UWord = "PHRASE"
+GoSub GetNext
+NoPhrases += 1
+PhraseNames<NoPhrases> = SWord
+GoSub GetNext
+PHRASES(NoPhrases) = SWord
+Case UWord = ""
+Case 1
+* field name
+Begin Case
+Case UWord = "FIELD"      ; * allows spec of keyword as a field name
+GoSub GetNext
+GoSub NewField
+Case UWord = "ATTR" Or UWord = "ATTRIBUTE"
+GoSub GetNext
+GoSub NewField
+FIELDRECS(NoFields)<DICT.TYPE> = "A"
+Case UWord = "SYN" Or UWord = "SYNONYM"
+GoSub GetNext
+GoSub NewField
+FIELDRECS(NoFields)<DICT.TYPE> = "S"
+Case 1
+Locate UWord In FileKeywords<1> Setting Pos Then
+Key = UWord
+Expected = FileKeywords<2>
+KeyValues = ''
+For ThisValue = 1 To Expected
+GoSub GetNext
+KeyValues<ThisValue> = SWord
+Next
+Convert @FM:@VM To @VM:@SVM In KeyValues
+NoKeys = DCount(TableRec<FILE.KEYWORD>,@VM) + 1
+TableRec<FILE.KEYWORD, NoKeys> = Key
+TableRec<FILE.KEYVALUE, NoKeys> = KeyValues
+End Else
+Locate UWord In FieldKeywords<1> Setting Pos Then
+Key = UWord
+Expected = FileKeywords<2>
+KeyValues = ''
+For ThisValue = 1 To Expected
+GoSub GetNext
+KeyValues<ThisValue> = SWord
+Next
+Convert @FM:@VM To @VM:@SVM In KeyValues
+NoKeys = DCount(FIELDRECS(NoFields)<DICT.KEYWORD>,@VM) + 1
+FIELDRECS(NoFields)<DICT.KEYWORD, NoKeys> = Key
+FIELDRECS(NoFields)<DICT.KEYVALUE, NoKeys> = KeyValues
+End Else
+GoSub NewField
+End
+End
+End Case
+End Case
+Return
+*------------------------------------------------------------------------------
+* RunCompileAtEnd - if doing a number of files run the CD at the end in case
+*                   any are TRANS() to later files in the list
+*------------------------------------------------------------------------------
+RunCompileAtEnd:
+For This = 1 To NoCompiles
+TableName = CompileTables<This>
+ITypeList = CompileFields<This>
+Convert @VM To @FM In ITypeList
+NoITypes = DCount(ITypeList,@FM)
+For I = 1 To NoITypes
+Execute "CD ":TableName:" ":ITypeList<I>
+Next
+Next
+Return
+*------------------------------------------------------------------------------
+* SetupCFile - ensure version of create.file with longnames and pick flavor
+*------------------------------------------------------------------------------
+SetupCFile:
+Read Verb From F.VOC,'MVS.LCFILE' Else
+Verb = 'V':@FM:'create.file':@FM:'E':@FM:'VF':@FM:'LONGNAMES':@FM:'PICK.FORMAT'
+Write Verb On F.VOC,'MVS.LCFILE'
+End
+Return
+*------------------------------------------------------------------------------
+* Bound routines - generated so do not edit
+*------------------------------------------------------------------------------
+$OPTIONS PICK
+Split:
+If UnAssigned(WhiteSpace) then WhiteSpace = ""
+If UnAssigned(Delims) then Delims = ""
+If WhiteSpace = "" then
+WhiteSpace = " ":TAB:CR:LF:@fm:@vm:@svm
+End
+If Delims = "" then
+Delims = "'":'"\'
+Delims<2> = Delims
+End
+Words = ""
+SplitLength = Len(SplitLine)
+If Not(SplitLength) Then
+RETURN
+End
+SplitCnt = 1
+IntSplitLine = SplitLine
+SplitDone = False
+NoWhiteSpace = Len(WhiteSpace)
+NoDelims = Len(Delims<1>)
+Loop
+Until SplitDone Do
+GoSub GetSplitWord
+Repeat
+RETURN
+GetSplitWord:
+Loop 
+While (Index(WhiteSpace, IntSplitLine[1,1],1)) And IntSplitLine <> ""
+IntSplitLine = IntSplitLine[2,HUGE]
+Repeat
+SplitIndex = Index(Delims<1>, IntSplitLine[1,1],1)
+Begin Case
+Case IntSplitLine = ""
+SplitDone = True
+Return
+Case SplitIndex
+If Delims<2>[SplitIndex,1] = "" then
+Word = IntSplitLine[1,1]
+IntSplitLine = IntSplitLine[2, HUGE]
+End Else
+Word = IntSplitLine[1,1]: Field(IntSplitLine[2,HUGE],Delims<2>[SplitIndex,1],1,1):Delims<2>[SplitIndex,1]
+IntSplitLine = IntSplitLine[Len(Word)+1,HUGE]
+End
+Case 1
+SplitIndex= Len(IntSplitLine)+1
+For SplitI = 1 To NoWhiteSpace
+SplitIndex2 = Index(IntSplitLine,WhiteSpace[SplitI,1],1)
+If SplitIndex2 And (SplitIndex2 < SplitIndex) Then SplitIndex = SplitIndex2
+Next SplitI
+For SplitI = 1 To NoDelims
+SplitIndex2 = Index(IntSplitLine,Delims[SplitI,1],1)
+If SplitIndex2 And (SplitIndex2 < SplitIndex) Then SplitIndex = SplitIndex2
+Next SplitI
+Word = IntSplitLine[1, SplitIndex-1]
+IntSplitLine = IntSplitLine[Len(Word)+1,HUGE]
+End Case
+Words<-1> = Word
+Return
+RETURN
+sentence.h:
+ASentence = ""
+ASentence = @Sentence
+RETURN
+args.h:
+GoSub sentence.h
+ArgList = ""
+GoSub sentence.h
+LIx = Index(ASentence,ProgramName,1)
+If LIx = 0 Then
+LIx = Index(OConv(ASentence,"MCU"), OConv(ProgramName,'MCU'),1)
+End
+If LIx then
+ASentence = ASentence[LIx+Len(ProgramName)+1,Len(ASentence)]
+End Else
+ASentence = Field(ASentence," ",2,Len(ASentence))
+End
+Loop
+ASentence = Trim(ASentence," ","B")
+Until ASentence = "" Do
+Begin Case
+Case ASentence[1,1] = "'"
+ArgList<-1> = Field(ASentence,"'",2,1)
+ASentence = Field(ASentence, "'",3, Len(ASentence))
+Case ASentence[1,1] = '"'
+ArgList<-1> = Field(ASentence,'"',2,1)
+ASentence = Field(ASentence,'"',3, Len(ASentence))
+Case 1
+ArgList<-1> = Field(ASentence,' ',1,1)
+ASentence = Field(ASentence,' ', 2, Len(ASentence))
+End Case
+Repeat
+Return
+readlist.h:
+List = ""
+If ListName = "" Then
+ReadList List Else List = ""
+End Else
+ReadList List From ListName Else List = ""
+End
+Return
+tclext.h:
+ItemList = ""
+Options = ""
+GoSub args.h
+LArgNo = 1
+FileName = ArgList<LArgNo>
+If FileName = "" Then
+Crt "File ": ; Input FileName
+If FileName = "" then Return
+End
+Open FileName To FL Else
+Crt "Cannot Open ":FileName
+FileName = ""
+Return
+End
+Loop
+LArgNo = LArgNo + 1
+Item = ArgList<LArgNo>
+Until Item = "" Do
+If Item[1,1] = "/" Or Item[1,1] = "-" Then
+LTestOption = OConv(Item[2,99],"MCU")
+Locate LTestOption In OptionList<1> Setting LPos Then
+LExpected = OptionList<2,LPos>
+For LI = 1 To LExpected
+LArgNo = LArgNo + 1
+Item<-1> = ArgList<LArgNo>
+Next LI
+Options<-1> = Item[2,Len(Item)]
+End Else
+FileName = ""
+End
+End Else
+ItemList<-1> = Item
+End
+Repeat
+Begin Case
+Case ItemList = "" And System(11)
+ListName = ""
+GoSub readlist.h
+ItemList = List
+Case ItemList = ""
+Crt "Item ": ; Input ItemList
+Case ItemList = "*"
+Perform "SELECT ":FileName
+ListName = ""
+GoSub readlist.h
+ItemList = List
+End Case             
+Return
+getini.h:
+IniValue = ""
+TIniRec = IniRec
+Convert Char(13) To '' In TIniRec
+UIniRec = UpCase(TIniRec)
+If Section <> "" Then
+LSecText = "[":UpCase(Section):"]"
+Locate LSecText In UIniRec Setting LPos Else
+Return
+End
+TIniRec = Field(TIniRec,@fm,LPos+1,9999)
+FindStr "[" In TIniRec Setting LPos Then
+TIniRec = Field(TIniRec,@fm, 1, LPos-1)
+End
+End
+UIniRec = UpCase(TIniRec)
+LOccur = 1
+Loop
+FindStr UpCase(Header) : "=" In UIniRec , LOccur Setting LPos Then
+If UpCase(TIniRec<LPos>)[1,Len(Header)+1] = UpCase(Header):"=" Then
+LFound = True
+End Else
+LFound = False
+LOccur += 1
+End
+End Else
+Return
+End
+Until LFound Or Not(LPos) Do
+Repeat
+IniValue = Field(TIniRec<LPos>,"=",2,9999)
+Return
+ostype.h:
+ostype.Windows = System(91)
+Return
+*------------------------------------------------------------------------------
+* Usage
+*------------------------------------------------------------------------------
+Usage:
+Crt 'MakeTable - generate tables'
+Crt
+Crt 'Syntax:'
+Crt
+Crt 'MakeTable script_file {scriptname|*} [options]'
+Crt
+Crt 'Each script contains multiple entries as below:'
+Crt
+Crt 'BEGIN DEFAULT'
+Crt '  [defaults]'
+Crt 'ENDDEFN'
+Crt 'BEGIN TABLE tablename'
+Crt '  [table details]'
+Crt '  [field details]'
+Crt '  [PHRASE id content]'
+Crt 'ENDDEFN'
+Crt
+Crt 'Table Details'
+Crt '-------------'
+Crt
+Crt '  TYPE n            File Type n'
+Crt '  MOD[ULO] n        File Modulus n'
+Crt '  SEP[ARATION] n    File Separation'
+Crt '  DYNAMIC           Create dynamic file'
+Crt '  DIRECTORY         Create directory (type 19) file'
+Crt '  SUBJECT text      Subject used on VOC pointer'
+Crt '  PREFIX text       Prefix for include file (below)'
+Crt '  DATAPOINTER name  Create new DICT for file name'
+Crt
+Crt 'Field Details'
+Crt '-------------'
+Crt
+Crt ' [FIELD]name        Field name'
+Crt ' FNO n              Field number n'
+Crt ' EXPR expression    Field expression expression'
+Crt ' CONV code          Field conversion code'
+Crt ' LEN n              Field length n'
+Crt ' JUST L|R|T         Field justification'
+Crt ' COLHEAD text       Field column heading: use ] for line break'
+Crt ' MONEY|CURRENCY     Use money format (see DEFAULT)'
+Crt ' DATE               Use date format (see DEFAULT)'
+Crt ' MEMO               Use memo format (see DEFAULT)'
+Crt ' TIME               Use time format (see DEFAULT)'
+Crt ' NUMBER|NUMERIC     Use number format (see DEFAULT)'
+Crt ' INTEGER            Use integer format (see DEFAULT)'
+Crt ' BOOLEAN            Use boolean format (see DEFAULT)'
+Crt ' MVED               Field is multivalued'
+Crt ' PRIMARY            Primary field (in @ phrase)'
+Crt ' DEPENDS name       Field depends on field name'
+Crt ' ASSOC name         Field is in association name'
+Crt ' INDEXED            Field needs secondary index'
+Crt
+Crt 'Legacy Fields'
+Crt '-------------'
+Crt
+Crt 'ATTR[IBUTE] name    Create legacy A type'
+Crt 'SYN[ONYM] name      Create legacy S type'
+Crt
+Crt 'Defaults'
+Crt '--------'
+Crt
+Crt ' DATEFORMAT code    Override default date format of D4'
+Crt ' TIMEFORMAT code    Override default time format of MTS'
+Crt ' NUMBERFORMAT code  Override default number format of MD0'
+Crt ' MONEYFORMAT code   Override default money format of MD2'
+Crt ' INCLUDEFILE name   Create BASIC include defs in file name'
+Crt ' CONSTFILE name     Create C# const defs in file name'
+Crt ' JAVAFILE name      Create Java const defs in file name'
+Crt ' NAMESPACE name     Use namespace for C# consts'
+Crt
+Crt 'Options:'
+Crt '--------'
+Crt '/TABLE name         Just do table out of multiple script'
+Crt '/NOINCLUDES         Do not generate include files'
+Crt '/NOQFILES           Do not create Q pointers'
+Crt '/NONEW              Do not create new files' 
+Return
+

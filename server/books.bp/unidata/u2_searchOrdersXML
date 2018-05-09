@@ -1,0 +1,64 @@
+$BASICTYPE "P"
+SUBROUTINE u2_searchOrdersXML(SearchData, OrderList, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_searchOrdersXML
+*  @@Description : Construct an XML query to return order data
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+Query = ''
+SearchId     = SearchData<1>
+SearchClient = SearchData<2>
+SearchStart  = SearchData<3>
+SearchEnd    = SearchData<4>
+* First step is to get all orders for that client if specified
+IF SearchClient <> '' THEN
+Query = 'SELECT U2_CLIENT_ORDERS "':SearchClient:'" SAVING ORDER_IDS'
+END
+* Next step is to select the orders in the date range if specified
+Query<-1> = 'SORT U2_ORDERS'
+WithClause = ''
+IF SearchId <> '' THEN
+WithClause = ' WITH ID = "':SearchId:'"'
+END ELSE
+IF SearchStart <> '' THEN
+WithClause = ' WITH ORDER_DATE >= "': SearchStart :'"'
+END
+IF SearchEnd <> '' THEN
+IF WithClause <> '' THEN WithClause := ' AND '
+WithClause := ' WITH ORDER_DATE <= "': SearchEnd : '"'
+END
+END
+Query := WithClause
+Query := ' ID ORDER_DATE CLIENT_ID CLIENT_NAME SHIP_ID SHIP_COST '
+Query := ' BOOK_ID QTY PRICE TAX_CODE '
+Query := ' TOXML ELEMENTS ID.SUP'
+EXECUTE Query CAPTURING Results
+* Sometimes there is a line break before the XML begins
+Ix = INDEX(Results,"<",1)
+IF Ix > 0 THEN
+OrderList = Results[Ix, LEN(Results)]
+END ELSE
+ErrText = 'No results selected'
+END
+RETURN
+

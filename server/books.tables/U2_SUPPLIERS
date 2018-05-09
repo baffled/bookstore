@@ -1,0 +1,39 @@
+!SCRIPT MAKETABLE %f %i
+ 
+$INCLUDE books.tables DEFAULT
+* ---------------------------------------------------------------------------
+*  @@Name        : U2_SUPPLIERS
+*  @@Description : Table Definition for U2_SUPPLIERS
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO{}
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Version Stamp
+!V!
+* ---------------------------------------------------------------------------
+BEGIN TABLE U2_SUPPLIERS
+TYPE 18
+MODULO 503
+SEPARATION 2
+   FIELD ID FNO 0 COLHEAD \Id\ LEN 3 JUST L
+   FIELD FULLNAME FNO 1 COLHEAD \Fullname\ LEN 50 JUST L
+   FIELD ADDRESS FNO 2 COLHEAD \Address\ LEN 50 JUST L MVED
+   FIELD PHONE FNO 3 COLHEAD \Phone\ LEN 15 JUST L
+   FIELD FAX FNO 4 COLHEAD \Fax\ LEN 15 JUST L
+   FIELD EMAIL FNO 5 COLHEAD \Email\ LEN 30 JUST L
+   FIELD SHIP_COST FNO 10 COLHEAD \Ship_cost\ MONEY LEN 8 JUST R
+   PHRASE @BROWSE \@ID FULLNAME\
+   PHRASE @ \FULLNAME\
+   PHRASE ALL_FIELDS \ID FULLNAME ADDRESS PHONE FAX EMAIL SHIP_COST\
+   PHRASE DATA_FIELDS \ID FULLNAME ADDRESS PHONE FAX EMAIL SHIP_COST\
+ENDDEFN

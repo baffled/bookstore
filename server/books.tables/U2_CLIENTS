@@ -1,0 +1,45 @@
+!SCRIPT MAKETABLE %f %i
+* ---------------------------------------------------------------------------
+*  @@Name        : U2_CLIENTS
+*  @@Description : Table Definition for U2_CLIENTS
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO{}
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Version Stamp
+!V!
+* ---------------------------------------------------------------------------
+$INCLUDE books.tables DEFAULT
+
+BEGIN TABLE U2_CLIENTS
+TYPE 18
+MODULO 503
+SEPARATION 2
+   FIELD ID             FNO 0 COLHEAD \Id\ LEN 10 JUST L
+   FIELD SURNAME        FNO 1 COLHEAD \Surname\ LEN 20 JUST L
+   FIELD FORENAME       FNO 2 COLHEAD \Forename\ LEN 20 JUST L
+   FIELD ADDRESS        FNO 3 COLHEAD \Address\ LEN 50 JUST L MVED
+   FIELD COUNTRY        FNO 4 COLHEAD \Country\ LEN 3 JUST L
+   FIELD TERRITORY_ID   FNO 5 COLHEAD \Territory_id\ LEN 10 JUST L
+   FIELD JOIN_DATE      FNO 6 COLHEAD \Join_date\ CONV \D4/\ LEN 12 JUST R
+   FIELD ACCOUNT_HELD   FNO 7 COLHEAD \Account_held\ NUMBER LEN 8 JUST R
+   FIELD ACCOUNT_STATUS FNO 7 COLHEAD \Account_status\ NUMBER LEN 8 JUST R
+
+   FIELD DELIM_ADDRESS  EXPR \CONVERT(@VM,",",ADDRESS)\ COLHEAD \Delim_address\ LEN 50 JUST L
+   FIELD U_FORENAME     EXPR \UPCASE(FORENAME)\ COLHEAD \U_forename\ LEN 20 JUST L
+   FIELD U_SURNAME      EXPR \UPCASE(SURNAME)\ COLHEAD \U_surname\ LEN 20 JUST L
+
+   PHRASE @BROWSE \FORENAME SURNAME\
+   PHRASE DATA_FIELDS \ID SURNAME FORENAME ADDRESS COUNTRY TERRITORY_ID JOIN_DATE ACCOUNT_HELD\
+   PHRASE ALL_FIELDS \ID SURNAME FORENAME ADDRESS COUNTRY TERRITORY_ID JOIN_DATE ACCOUNT_HELD U_SURNAME U_FORENAME DELIM_ADDRESS\
+ENDDEFN

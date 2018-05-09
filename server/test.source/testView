@@ -1,0 +1,46 @@
+PROGRAM testView
+
+$INCLUDE studio.bp studio.h
+
+
+ViewName = 'vewBOOKSTORE_ORDERS'
+Context = ''
+ErrText = ''
+Call sxopen(Context, ViewName, ErrText)
+If ErrText <> '' then
+   Crt ErrText
+   STOP
+End
+
+Id = '14456*72000*001'
+Call sxread( Context, ViewName, Id, Rec, IsNew, ErrText)
+If ErrText <> '' then
+   Crt ErrText
+   STOP
+End
+
+Dc = DCount(Rec,@FM)
+For I = 1 to Dc
+   Crt I:". ":Rec<I>
+Next
+
+Crt 'Running Selection'
+
+SelData = ""
+SelData<MVS.SELECT.SOURCE> = ViewName
+SelData<MVS.SELECT.COL> = "CLIENT_ID":@VM:"FORENAME":@VM:"SURNAME":@VM:"DESPATCH_DATE"
+SelData<MVS.SELECT.IDS> = Id
+SelData<MVS.SELECT.OUTPUT> = MVS.SELECT.OUTPUT.DATA
+
+Handle = 0
+Call sxselsource(Context,ViewName, Handle, SelData, OutData, ErrText)
+If ErrText <> '' then
+   Crt ErrText
+   STOP
+End
+Dc = DCount(OutData,@FM)
+For I = 1 to Dc
+   Crt I:". ":OutData<I>
+Next
+
+

@@ -1,0 +1,12 @@
+PROGRAM testSearchClients
+Crt 'Enter search text ' :
+Input SearchText
+If SearchText = '' Then STOP
+ClientList = ''
+ErrText = ''
+Call u2_searchClients( SearchText, ClientList, ErrText)
+Crt 'ErrText=':ErrText
+Crt '[ClientList]'
+Crt ClientList
+STOP
+

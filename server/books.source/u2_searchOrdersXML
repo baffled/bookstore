@@ -1,0 +1,87 @@
+$IFDEF UNIDATA
+$BASICTYPE "P"
+$ENDIF
+SUBROUTINE u2_searchOrdersXML(SearchData, OrderList, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_searchOrdersXML
+*  @@Description : Construct an XML query to return order data
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$IFDEF UNIVERSE
+$OPTIONS PICK
+$ENDIF
+
+EQU SEARCH.ID     TO 1
+EQU SEARCH.CLIENT To 2
+EQU SEARCH.START.DATE   To 3
+EQU SEARCH.END.DATE To 4
+
+Query = ''
+SearchId     = SearchData<SEARCH.ID>
+SearchClient = SearchData<SEARCH.CLIENT>
+SearchStart  = SearchData<SEARCH.START.DATE>
+SearchEnd    = SearchData<SEARCH.END.DATE>
+
+* First step is to get all orders for that client if specified
+If SearchClient <> '' Then
+   Query = 'SELECT U2_CLIENT_ORDERS "':SearchClient:'" SAVING ORDER_IDS'
+End
+
+* Next step is to select the orders in the date range if specified
+Query<-1> = 'SORT U2_ORDERS'
+
+WithClause = ''
+If SearchId <> '' Then
+   WithClause = ' WITH ID = "':SearchId:'"'
+End Else
+If SearchStart <> '' Then
+   WithClause = ' WITH ORDER_DATE >= "': SearchStart :'"'
+End
+If SearchEnd <> '' Then
+   If WithClause <> '' then WithClause := ' AND '
+   WithClause := ' WITH ORDER_DATE <= "': SearchEnd : '"'
+End
+End
+
+Query := WithClause
+Query := ' ID ORDER_DATE CLIENT_ID CLIENT_NAME SHIP_ID SHIP_COST '
+Query := ' BOOK_ID QTY PRICE TAX_CODE '
+Query := ' TOXML ELEMENTS ID.SUP'
+
+$IFDEF UNIVERSE
+EXECUTE Query, OUT. > Results
+$ELSE
+EXECUTE Query CAPTURING Results
+$ENDIF
+
+* Sometimes there is a line break before the XML begins
+Ix = Index(Results,"<",1)
+If Ix > 0 Then
+  OrderList = Results[Ix, Len(Results)]
+End Else
+  ErrText = 'No results selected'
+End
+
+RETURN
+
+

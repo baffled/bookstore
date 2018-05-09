@@ -1,0 +1,123 @@
+! Test for calOrderTotal
+
+$INCLUDE books.inc U2_ORDERS.h
+
+
+GoSub Init
+GoSub ShouldSumOrderLines
+GoSub ShouldAddShippingCosts
+GoSub ShouldApplySalesTaxes
+GoSub ShouldAddMultipleQuantities
+GoSub WrapUp
+
+STOP
+
+* --------------------------------------------------------------------------
+* Init
+* --------------------------------------------------------------------------
+Init:
+Open 'U2_SALESTAX' To U2_SALESTAX Else
+  Error 'Cannot open U2_SALESTAX'
+  STOP
+End
+TaxRec = 'Test Rate':@FM:20
+Write TaxRec On U2_SALESTAX,'T'
+
+Return
+
+* --------------------------------------------------------------------------
+* WrapUp
+* --------------------------------------------------------------------------
+WrapUp:
+
+   Delete U2_SALESTAX, 'T'
+   Return
+
+* --------------------------------------------------------------------------
+* CallSub
+* --------------------------------------------------------------------------
+CallSub:
+  Total = 0
+  Call u2_calcOrderTotal( Total, OrderRec)
+Return
+
+* --------------------------------------------------------------------------
+* ShouldSumOrderLines
+* --------------------------------------------------------------------------
+ShouldSumOrderLines:
+  Announce "Should sum order lines"
+  
+  OrderRec = ''
+  OrderRec<U2_ORDERS.CLIENT_ID> = 1
+  OrderRec<U2_ORDERS.BOOK_ID> = 1:@VM:2:@VM:3
+  OrderRec<U2_ORDERS.QTY> = 1:@VM:1:@VM:1
+  OrderRec<U2_ORDERS.PRICE> = 1099:@VM:1199:@VM:1299
+  Expected = 3597
+  
+  GoSub CallSub
+  AssertIs "Should have total", Total, Expected
+  
+Return
+
+* --------------------------------------------------------------------------
+* ShouldAddShippingCosts
+* --------------------------------------------------------------------------
+ShouldAddShippingCosts:
+  Announce "Should add shipping costs"
+  
+  OrderRec = ''
+  OrderRec<U2_ORDERS.CLIENT_ID> = 1
+  OrderRec<U2_ORDERS.SHIP_COST> = 1000
+  OrderRec<U2_ORDERS.BOOK_ID> = 1:@VM:2:@VM:3
+  OrderRec<U2_ORDERS.QTY> = 1:@VM:1:@VM:1
+  OrderRec<U2_ORDERS.PRICE> = 1099:@VM:1199:@VM:1299
+  Expected = 4597
+  
+  GoSub CallSub
+  AssertIs "Should have total", Total, Expected
+  
+Return
+
+* --------------------------------------------------------------------------
+* ShouldApplySalesTaxes
+* --------------------------------------------------------------------------
+ShouldApplySalesTaxes:
+  Announce "Should apply sales taxes"
+  
+  OrderRec = ''
+  OrderRec<U2_ORDERS.CLIENT_ID> = 1
+  OrderRec<U2_ORDERS.SHIP_COST> = 1000
+  OrderRec<U2_ORDERS.BOOK_ID> = 1:@VM:2:@VM:3
+  OrderRec<U2_ORDERS.QTY> = 1:@VM:1:@VM:1
+  OrderRec<U2_ORDERS.PRICE> = 1099:@VM:1199:@VM:1299
+  OrderRec<U2_ORDERS.TAX_CODE> = 'T':@VM:'T':@VM:'T'
+  
+  Expected = 5316
+  
+  GoSub CallSub
+  AssertIs "Should have total", Total, Expected
+  
+Return
+
+
+* --------------------------------------------------------------------------
+* ShouldAddMultipleQuantities:
+* --------------------------------------------------------------------------
+ShouldAddMultipleQuantities:
+  Announce "Should add multiple quantities"
+  
+  OrderRec = ''
+  OrderRec<U2_ORDERS.CLIENT_ID> = 1
+  OrderRec<U2_ORDERS.SHIP_COST> = 1000
+  OrderRec<U2_ORDERS.BOOK_ID> = 1:@VM:2:@VM:3
+  OrderRec<U2_ORDERS.QTY> = 1:@VM:2:@VM:3
+  OrderRec<U2_ORDERS.PRICE> = 1099:@VM:1199:@VM:1299
+  OrderRec<U2_ORDERS.TAX_CODE> = 'T':@VM:'T':@VM:'T'
+  * 7394 + tax = 8872
+  Expected = 9872
+  
+  GoSub CallSub
+  AssertIs "Should have total", Total, Expected
+  
+Return
+   

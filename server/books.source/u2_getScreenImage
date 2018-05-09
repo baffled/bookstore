@@ -1,0 +1,109 @@
+$IFDEF UNIDATA
+$BASICTYPE "P"
+$ENDIF
+       SUBROUTINE u2_getScreenImage( FileName, FieldList, Id, Record, Image, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_getScreenImage
+*  @@Description : Get the image for a screen
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO{
+*    This updates the display information for a generic entry screen by
+*    building an array of data in the order in which the screen is presented.
+*    This is done for three reasons:
+*     a) to resolve any calculated fields using native expressions.
+*     b) to resolve any formatting (conversion codes)
+*     c) to ensure that it follows the culture and language info on the server.
+*  }
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$IFDEF UNIVERSE
+$OPTIONS PICK
+$ENDIF
+$INCLUDE u2_common.h
+
+       NoFields = DCount(FieldList,@FM)
+       Open 'DICT', FileName To DFL Else
+          ErrText = 'Cannot open DICT ':FileName
+          RETURN
+       End
+
+       @RECORD = Record
+       @ID     = Id
+
+       For FieldNo = 1 To NoFields
+          FieldName = FieldList<FieldNo>
+          GoSub GetField
+          Image<FieldNo> = Value
+       Next FieldNo
+
+       RETURN
+
+* --------------------------------------------------------------------------
+* GetField : there are quicker ways to do this, but this has the
+*            benefit of simplicity
+* --------------------------------------------------------------------------
+GetField: 
+       Value = ''
+       Read DictRec From DFL, FieldName Else
+          Return
+       End
+       First = OConv(Trim(DictRec<1>),"MCU")
+       Begin Case
+          Case First = "I" Or First = "V"
+             Value = IType(DictRec)
+             Conv = DictRec<3>
+          Case First = "D"
+             If DictRec<2> = 0 Then
+                Value = Id
+             End Else
+                Value = Record<DictRec<2>>
+             End
+             Conv = DictRec<3>
+          Case First = "A" Or First = "S" ;* horrible legacy types
+             If DictRec<2> = 0 then
+                Value = Id
+             End Else
+                Value = Record<DictRec<2>>
+             End
+             If DictRec<8> <> "" Then
+$IFDEF UNIVERSE
+                Value = OConvS(Value, DictRec<8>)
+$ELSE
+                Value = OConv(Value, DictRec<8>)
+$ENDIF
+             End
+             Conv = DictRec<7>
+          Case 1
+             Conv = ''
+             Value = ''
+       End Case
+       If Conv <> '' Then
+$IFDEF UNIVERSE
+          Value = OConvS(Value, Conv)
+$ELSE
+          Value = Oconv(Value, Conv)
+$ENDIF
+       End
+
+
+
+       Return
+

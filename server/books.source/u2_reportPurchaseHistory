@@ -1,0 +1,96 @@
+$IFDEF UNIDATA
+$BASICTYPE "P"
+$ENDIF
+       SUBROUTINE u2_reportPurchaseHistory(SearchData, Text, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_reportPurchaseHistory
+*  @@Description : Show the purcahse summary history for a book
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO{
+*   For UniVerse, this leans on the SQL integration.
+*   For UniData it uses the native enquiry.
+*
+*   As with the order history this needs to expand the individual lines
+*   hence the use of UNNEST U2_PURCHASES ON BOOK_ID as the table specification.
+*
+*   Note that we can combine SQL Column expressions with native EVAL phrases.
+*  }
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$IFDEF UNIVERSE
+$OPTIONS PICK
+$ENDIF
+$INCLUDE books.source u2_common.h
+
+$INCLUDE books.inc U2_BOOKS.h
+
+BookId = SearchData<1>
+Intl   = SearchData<2>
+
+Perform "TERM 132,60" ;* set the report page size
+Perform "CLEARSELECT ALL"
+
+ReadV BookTitle From F.BOOKS, BookId, U2_BOOKS.TITLE Else
+  BookTitle = "Unknown"
+End
+$IFDEF UNIDATA
+Query = \SORT U2_PURCHASES BY-EXP BOOK_ID BY ORDER_DATE \
+* Query := \ BREAK.ON EVAL "OCONV(ORDER_DATE,'DMY')" AS "Month" "'V'"\
+Query := \ ORDER_DATE SUPPLIER_ID SUPPLIER_NAME DELIV_DATE\
+Query := \ WHEN BOOK_ID = "\ : BookId:\"\
+If Intl Then
+Query := \ PRICE_INTL TOTAL ORDER_QTY TOTAL REJECT_QTY\
+End Else
+Query := \ PRICE TOTAL ORDER_QTY TOTAL REJECT_QTY\
+End
+Query := \ HEADING "Purchase History for \:BookId:\ \:BookTitle:\ on 'D'"\
+Query := \ FOOTING "Page 'P'\:Char(12):\"\
+Query := \ ID.SUP\
+Execute Query CAPTURING Text
+$ENDIF
+
+$IFDEF UNIVERSE
+Query = \ SELECT EVAL "OCONV(ORDER_DATE,'DMY')" AS "Month", \
+Query := \ SUM(ORDER_QTY) AS "Orders", SUM(REJECT_QTY) As "Rejects", \
+Query := \ SUM(ORDER_QTY * PRICE) AS "Value" \
+Query := \ FROM UNNEST U2_PURCHASES ON BOOK_ID \
+Query := \ WHERE BOOK_ID = '\:BookId:\'\
+Query := \ GROUP BY EVAL "OCONV(ORDER_DATE,'DMY')" ;\
+
+Execute Query CAPTURING Text
+* stripp off preamble
+Ix = Index(Text,'Month',1)
+Text = Text[Ix, Len(Text)]
+
+* Strip off any terminal clear (@(-1)) sequences if present.
+If @(-1) <> "" then
+  Text = Change(Text,@(-1),"")
+End
+$ENDIF
+
+L = Len(Text)
+If Text[L,1] = Char(12) then
+  Text = Text[1, L-1]
+End
+
+RETURN
+
+

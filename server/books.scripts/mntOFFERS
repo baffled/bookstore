@@ -1,0 +1,13 @@
+PA
+ENTER U2_PROMOTIONS _
+   HEADING "Promotions and offers" _
+   @(2,2) "Promo Code " @(15,2) FIELD ID _
+   @(2,3) "Short Description:" @(2,4) FIELD SHORT_DESCRIPTION _
+   @(2,5) "Start date " @(15,5) FIELD START_DATE _
+   @(30,5) "End date " @(40,5) FIELD END_DATE _
+   @(2,6) "Min Qty" @(15,6) FIELD MIN_QTY _
+   @(2,7) "Discount %" @(15,7) FIELD DISCOUNT_PCT _
+   @(2,8) "Titles Included" _
+   @(2,9,10) FIELD TITLE_ID RELATES U2_BOOKS SHOWING TITLE _
+   @(20,9,-1) FIELD TITLE_NAME
+

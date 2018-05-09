@@ -1,0 +1,9 @@
+SUBROUTINE testShowData(SomeData)
+
+NoFields = DCount(SomeData,@FM)
+For FieldNo = 1 TO NoFields
+   Crt (FieldNo "R#4"):":":SomeData<FieldNo>
+Next NoFields
+
+RETURN
+

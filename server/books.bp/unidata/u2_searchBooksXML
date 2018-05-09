@@ -1,0 +1,46 @@
+$BASICTYPE "P"
+SUBROUTINE u2_searchBooksXML(SearchData, BookList, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_searchBooksXML
+*  @@Description : Construct an XML query to return book data
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+* U2 searching is always case sensitive.
+* Force case insensitivity by using virtual upper case synonym fields and by
+* convertig the search text to upper case.
+SearchText = OCONV(SearchData,"MCU")
+Query = 'SORT U2_BOOKS'
+Query := ' TITLE AUTHOR_NAME ISBN SALE_PRICE MEDIA'
+Query := ' WITH U_TITLE LIKE "...':SearchText:'..."'
+Query := ' OR WITH U_AUTHOR_NAME LIKE "...':SearchText:'..."'
+Query := ' TOXML ELEMENTS'
+EXECUTE Query CAPTURING Results
+* Sometimes there is a line break before the XML begins
+Ix = INDEX(Results,"<",1)
+IF Ix > 0 THEN
+BookList = Results[Ix, LEN(Results)]
+END ELSE
+ErrText = 'No results selected'
+END
+RETURN
+

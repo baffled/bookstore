@@ -1,0 +1,6 @@
+PROGRAM
+Crt 'Client Id ':
+Input ClientId
+Call u2_getClientPayments(ClientId, PaymentIds,ErrText)
+Crt PaymentIds
+STOP

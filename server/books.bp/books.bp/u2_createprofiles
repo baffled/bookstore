@@ -1,0 +1,109 @@
+PROGRAM u2_createprofiles
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_createprofiles
+*  @@Description : Create buyer profiles 
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log  
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------  
+$OPTIONS PICK
+$INCLUDE books.inc U2_BOOKS.h
+$INCLUDE books.inc U2_ORDERS.h
+$INCLUDE books.inc U2_PROFILES.h
+Open 'U2_PROFILES' To F.PROFILES Else
+Crt 'Cannot open profiles'
+STOP
+End
+Open 'U2_BOOKS' To F.BOOKS Else
+Crt 'Cannot open U2_BOOKS'
+STOP
+End
+Open 'U2_ORDERS' To F.ORDERS Else
+Crt 'Cannot open U2_ORDERS'
+STOP
+End
+GoSub Initialize
+ErrText = ''
+GoSub Main
+Crt
+If ErrText <> '' Then
+Crt 'ERROR ':ErrText
+End Else
+Crt 'Completed'
+End
+STOP
+*---------------------------------------------------------------------------
+* Initialize
+*---------------------------------------------------------------------------
+Initialize:
+Crt 'Clearing current profiles'
+ClearFile F.PROFILES
+Return
+*---------------------------------------------------------------------------
+* Main
+*---------------------------------------------------------------------------
+Main:
+Ct = 0
+Fin = @False
+Select F.ORDERS
+Loop
+ReadNext OrderId Else Fin = @True
+Until Fin Or ErrText Do
+GoSub AddOrder
+Repeat
+Return
+*---------------------------------------------------------------------------
+* AddOrder
+*---------------------------------------------------------------------------
+AddOrder:
+Read OrderRec From F.ORDERS, OrderId Else
+ErrText = 'Missing Order ':OrderId
+Return
+End
+NoLines = DCount(OrderRec<U2_ORDERS.BOOK_ID>,@VM)
+CustId = OrderRec<U2_ORDERS.CLIENT_ID>
+ReadU ProfileRec From F.PROFILES, CustId Else
+ProfileRec = ''
+End
+For ThisLine = 1 To NoLines
+BookId = OrderRec<U2_ORDERS.BOOK_ID, ThisLine>
+GoSub AddBook
+Next
+Write ProfileRec On F.PROFILES, CustId
+Ct += 1
+If Not(Mod(Ct,1000)) Then Crt '.':
+Return
+*---------------------------------------------------------------------------
+* AddBook
+*---------------------------------------------------------------------------
+AddBook:
+Read BookRec From F.BOOKS, BookId Else
+ErrText = 'Missing book ':BookId
+Return
+End
+DeptGenre = BookRec<U2_BOOKS.DEPT>:'_':BookRec<U2_BOOKS.GENRE>
+Locate DeptGenre In ProfileRec<U2_PROFILES.DEPTGENRE> BY 'AL' Setting Pos Then
+ProfileRec<U2_PROFILES.COUNTS, Pos> += 1
+End Else
+Ins DeptGenre Before ProfileRec<U2_PROFILES.DEPTGENRE, Pos>
+Ins 1 Before ProfileRec<U2_PROFILES.COUNTS, Pos>
+End
+Return

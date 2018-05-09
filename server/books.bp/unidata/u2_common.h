@@ -1,0 +1,8 @@
+!INCLUDE
+COMMON /U2_BOOKS/ U2_FILES(20),U2_INIT
+! Self initializing common
+IF U2_INIT = 0 THEN
+U2_INIT = @TRUE
+CALL u2_init
+END
+

@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<SCREEN displayOnly="no" noClear="yes">
+<MAINFILE>U2_SALESTAX</MAINFILE>
+<MAINDICT>U2_SALESTAX</MAINDICT>
+<HEADING>Maintain Sales Tax Rates</HEADING>
+<PROMPTS>
+  <PROMPT x="10" y="10" text="Tax code" />
+  <PROMPT x="10" y="50" text="Description" />
+  <PROMPT x="10" y="100" text="Rate" />
+</PROMPTS>
+<FIELDS>
+  <FIELD x="100" y="10" fno="0" name="ID" length="50" depth="0" selection="SORT U2_SALESTAX SHORT_DESCRIPTION RATE" />
+  <FIELD x="100" y="50" fno="1" name="SHORT_DESCRIPTION" length="150" depth="0" />
+  <FIELD x="100" y="100" fno="2" name="RATE" length="50" depth="0" />
+</FIELDS>
+</SCREEN>

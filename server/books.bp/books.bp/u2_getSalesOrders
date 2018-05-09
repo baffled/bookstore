@@ -1,0 +1,87 @@
+SUBROUTINE u2_getSalesOrders( InData, OutData, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_getSalesOrders
+*  @@Description : Get sales orders based on searching 
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log  Added autodoc comments.
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$INCLUDE books.inc U2_CLIENTS.h
+$INCLUDE books.inc U2_ORDERS.h
+EQU OUT.ORDER To 10
+EQU OUT.DATE TO 11
+EQU OUT.STATUS To 12
+EQU OUT.CLIENT To 13
+EQU OUT.TOTAL TO 14
+Open 'U2_CLIENTS' To F.U2_CLIENTS Else
+ErrText = 'Cannot open U2_CLIENTS'
+RETURN
+End
+Open 'U2_ORDERS' To F.U2_ORDERS Else
+ErrText = 'Cannot open U2_ORDERS'
+RETURN
+End
+FromDate = InData<1>
+ToDate = InData<2>
+ClientId = InData<3>
+OutData = ''
+ErrText = ''
+Cmd = "SSELECT U2_ORDERS BY.DSND ORDER_DATE BY CLIENT_ID"
+Clause = ''
+If FromDate <> '' Then
+Clause := 'ORDER_DATE >= "': OConv(FromDate,"D4/"): '"'
+End
+If ToDate <> '' Then
+Clause<-1> = 'ORDER_DATE <= "':OConv(ToDate,"D4/"): '"'
+End
+If ClientId <> '' Then
+Clause<-1> = 'CLIENT_ID = "' : ClientId : '"'
+End                                                     
+Clause = Change(Clause, @FM, " AND " )
+Cmd = Cmd : ' WITH ' : Clause
+NoOrders = 0
+Execute Cmd, SELECT. > SLIST
+Fin = @False
+Loop
+ReadNext Id From SLIST Else Fin = @True
+Until Fin Do
+GoSub Add
+Repeat
+RETURN
+*---------------------------------------------------------------------------
+* Add
+*---------------------------------------------------------------------------
+Add:
+Read SalesRec From F.U2_ORDERS, Id Else
+Return
+End
+NoOrders += 1
+OutData<OUT.ORDER, NoOrders> = Id
+OutData<OUT.DATE, NoOrders> = Id["*",1,1]
+OutData<OUT.STATUS, NoOrders> = SalesRec<U2_ORDERS.ORDER_STATUS>
+ClientId = SalesRec<U2_ORDERS.CLIENT_ID>
+Read ClientRec From F.U2_CLIENTS, ClientId Then
+ClientId = ClientRec<U2_CLIENTS.FORENAME>:' ':ClientRec<U2_CLIENTS.SURNAME>
+End
+OutData<OUT.CLIENT, NoOrders> = ClientId
+Call u2_calcOrderTotal(Total, SalesRec)
+OutData<OUT.TOTAL, NoOrders> = Total
+Return

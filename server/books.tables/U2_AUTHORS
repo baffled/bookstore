@@ -1,0 +1,37 @@
+!SCRIPT MAKETABLE %f %i
+ 
+* ---------------------------------------------------------------------------
+*  @@Name        : U2_AUTHORS
+*  @@Description : Table Definition for U2_AUTHORS
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO{}
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Version Stamp
+!V!
+* ---------------------------------------------------------------------------
+$INCLUDE books.tables DEFAULT
+ 
+BEGIN TABLE U2_AUTHORS
+TYPE 18
+MODULO 503
+SEPARATION 2
+   FIELD ID FNO 0 COLHEAD \Id\ LEN 5 JUST R
+   FIELD FULLNAME FNO 1 COLHEAD \Fullname\ LEN 30 JUST L
+   FIELD BOOK_IDS FNO 2 COLHEAD \Book_ids\ LEN 5 JUST R MVED
+   FIELD SORTNAME EXPR \FIELD(FULLNAME," ",DCOUNT(FULLNAME," "),1)\ COLHEAD \Sortname\ CONV \MCU\ LEN 10 JUST L
+   FIELD BOOK_TITLE EXPR \TRANS(U2_BOOKS, BOOK_IDS, TITLE, 'X')\ COLHEAD \\ CONV \Book Titles\ LEN 30 JUST L MVED
+   FIELD U_FULLNAME EXPR \UPCASE(FULLNAME)\ COLHEAD \U_fullname\ LEN 30 JUST L
+   PHRASE DATA_FIELDS \ID FULLNAME BOOK_IDS\
+   PHRASE ALL_FIELDS \ID FULLNAME BOOK_IDS SORTNAME\
+ENDDEFN
