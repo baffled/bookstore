@@ -1,0 +1,58 @@
+$IFDEF UNIDATA
+$BASICTYPE "P"
+$ENDIF
+SUBROUTINE u2_plotGenreSales(InData, OutData, ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_plotGenreSales
+*  @@Description : Call Python routine to generate sales charts for a date
+*                  range by genre.
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log  
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$IFDEF UNIVERSE
+$OPTIONS PICK
+$ENDIF
+OutData = ''
+ErrText = ''
+
+StartDate = OConv(InData<1>,'D4')
+EndDate   = OConv(InData<2>,'D4')
+Path = ''
+Open 'images' To IMAGES Then
+  Status FStat From IMAGES Then
+    Path = FStat<27>
+   End
+End
+
+ModuleName = 'plotsalesgenres'
+FuncName = 'run'
+
+Result = PyCallFunction(ModuleName, FuncName, StartDate, EndDate, Path)
+If @PYEXCEPTIONTYPE <> '' Then
+  Crt @PYEXCEPTIONMSG
+  Crt @PYEXCEPTIONTRACEBACK
+End Else
+  OutData = Result
+End
+RETURN
+
+

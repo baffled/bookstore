@@ -1,0 +1,20 @@
+PROGRAM U2.PLOT.GENRE.SALES
+
+Get(Arg.) StartDate Else
+  Crt 'Start date : ':
+  Input StartDate
+  If StartDate = '' Then STOP
+End
+
+Get(Arg.) EndDate Else
+  Crt 'End date : ':
+  Input EndDate
+  If EndDate = '' Then STOP
+End
+
+InData = IConv(StartDate,'D'):@FM:IConv(EndDate,'D')
+Call u2_plotGenreSales(InData, OutData, ErrText)
+Crt 'Wrote plot at ':OutData
+
+STOP
+
