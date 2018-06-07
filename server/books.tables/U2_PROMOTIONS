@@ -23,7 +23,7 @@ $INCLUDE books.tables DEFAULT
 * ---------------------------------------------------------------------------
 BEGIN TABLE U2_PROMOTIONS
 TYPE 18
-MODULO 503
+MODULO 11
 SEPARATION 2
    FIELD ID                 FNO 0 COLHEAD \Id\ LEN 10 JUST L
    FIELD SHORT_DESCRIPTION  FNO 1 COLHEAD \Short_description\ LEN 70 JUST L

@@ -21,9 +21,7 @@
 * ---------------------------------------------------------------------------
 $INCLUDE books.tables DEFAULT
 BEGIN TABLE U2_PAYMENTS
-TYPE 18
-MODULO 503
-SEPARATION 2
+TYPE DYNAMIC
    FIELD ID          FNO 0 COLHEAD \Id\ LEN 10 JUST L
    FIELD PAY_DATE    FNO 1 COLHEAD \Pay_date\ CONV \D4/\ LEN 12 JUST R
    FIELD CLIENT_ID   FNO 2 COLHEAD \Client_id\ LEN 10 JUST L

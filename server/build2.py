@@ -17,6 +17,7 @@ class BookstoreSetup:
       self.asset_path = '../../repository/assets'
     self.bin_path = self.makePath(self.uv_path, 'bin')
     self.home = os.getcwd()
+    self.python_path = self.makePath(self.uv_path,'python')
     
   def createFolder(self,directory):
     try:
@@ -54,6 +55,8 @@ class BookstoreSetup:
     self.setupSourceFiles()
     self.setupDataFiles()
     self.setupPythonPath()
+    self.setupPip()
+    self.setupPackages()
     
   def loadAssets(self, fileName):
     tempFL = u2py.File(fileName)
@@ -79,11 +82,7 @@ class BookstoreSetup:
 
   def makePath(self, path, path2):
     return path + self.delim + path2
-    
-  def setupUtilityPrograms(self):
-    self.createFilePointer('blutil.bp','blutil.bp')
-    self.compilePrograms('blutil.bp')
-
+	
   def compilePrograms(self, fileName):  
     u2py.run('CREATE.FILE ' + fileName +'.O 1,1 1,1,19', capture=False)
     u2py.run('BASIC ' + fileName + ' * ', capture=False)
@@ -118,7 +117,20 @@ class BookstoreSetup:
           self.createFilePointer(fileName, fileName + '.safe')      
           cmd = 'COPYI FROM ' + fileName + '.safe TO ' + fileName + ' ALL OVERWRITING'
           u2py.run(cmd)
-  
+
+  def setupPackages(self):
+    packageList = [( 'pandas','0.20.3'),('matplotlib','2.2.2')]
+    for package in packageList:
+       cmd = self.makePath(self.python_path,'scripts') + self.delim + 'pip install '
+       cmd = cmd + package[0] + '==' + package[1]
+       os.system(cmd)
+	   
+  def setupPip(self):
+    if os.name == 'nt':
+       if not os.path.exists('c:\\Python34'):
+          cmd = 'mklink /d c:\\Python34 ' + self.python_path
+          os.system(cmd)
+		  
   def setupPythonPath(self):
     myPath = self.makePath(self.uv_path,'python')
     myPath = self.makePath(myPath,'my.pth')
@@ -140,7 +152,7 @@ class BookstoreSetup:
       rec = u2py.DynArray()
       rec.replace(1,'F')
       rec.replace(2,'../../repository/server/' + fileName)
-	  rec.replace(3,'D_VOC')
+      rec.replace(3,'D_VOC')
       if fileName[-3:] == '.bp':
         rec.replace(4,'M')
         rec.replace(7,1,fileName)
@@ -153,7 +165,12 @@ class BookstoreSetup:
         self.compilePrograms(fileName)
       elif fileName[-3:] == '.pa':
         self.createRemotes(fileName)
+  
+  def setupUtilityPrograms(self):
+    self.createFilePointer('blutil.bp','blutil.bp')
+    self.compilePrograms('blutil.bp')
 
+  
   def startUniVerse(self):
     print('Starting UniVerse command shell in the demonstration bookstore')
     print('Type OFF to quit when you have finished')    
@@ -171,7 +188,7 @@ class BookstoreSetup:
 
 if __name__ == "__main__":
     a = BookstoreSetup()
-    a.run()                          
+    a.run()
     
 
  

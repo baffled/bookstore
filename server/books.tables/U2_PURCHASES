@@ -22,9 +22,7 @@ $INCLUDE books.tables DEFAULT
 !V!
 * ---------------------------------------------------------------------------
 BEGIN TABLE U2_PURCHASES
-TYPE 18
-MODULO 503
-SEPARATION 2
+TYPE DYNAMIC
    FIELD ID             FNO 0 COLHEAD \Id\ LEN 10 JUST L
    FIELD ORDER_DATE     FNO 1 COLHEAD \Order_date\ CONV \D4/\ LEN 12 JUST R
    FIELD SUPPLIER_ID    FNO 2 COLHEAD \Supplier_id\ LEN 10 JUST L

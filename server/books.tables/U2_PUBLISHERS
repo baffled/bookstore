@@ -23,7 +23,7 @@ $INCLUDE books.tables DEFAULT
 * ---------------------------------------------------------------------------
 BEGIN TABLE U2_PUBLISHERS
 TYPE 18
-MODULO 503
+MODULO 31
 SEPARATION 2
    FIELD ID         FNO 0 COLHEAD \Id\ LEN 10 JUST L
    FIELD FULLNAME   FNO 1 COLHEAD \Fullname\ LEN 40 JUST L
