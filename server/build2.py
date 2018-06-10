@@ -9,12 +9,14 @@ class BookstoreSetup:
       self.acc_home = '..\\universe'
       self.uv_path = 'c:\\u2\\uv'
       self.asset_path = '..\\..\\repository\\assets'
-      self.delim = '\\'	  
+      self.delim = '\\'
+      self.pythonexe = 'python.exe'	  
     else:
       self.acc_home = '../universe'
       self.uv_path = '/usr/uv'
       self.delim = '/'
       self.asset_path = '../../repository/assets'
+      self.pythonexe = 'python'
     self.bin_path = self.makePath(self.uv_path, 'bin')
     self.home = os.getcwd()
     self.python_path = self.makePath(self.uv_path,'python')
@@ -57,6 +59,7 @@ class BookstoreSetup:
     self.setupPythonPath()
     self.setupPip()
     self.setupPackages()
+    self.setupWebserver()
     
   def loadAssets(self, fileName):
     tempFL = u2py.File(fileName)
@@ -170,10 +173,27 @@ class BookstoreSetup:
     self.createFilePointer('blutil.bp','blutil.bp')
     self.compilePrograms('blutil.bp')
 
-  
+  def setupWebserver(self):
+    cmd = self.makePath(self.python_path, self.pythonexe)
+    cmd = cmd + ' ' + self.makePath(self.home, 'server\\books.pysrc\\webserver.py')
+    cmd = cmd + ' --rootdir ' + self.home + '\\web'
+    cmd = cmd.replace('\\', self.delim)
+    with open('start_webserver.bat','w') as f:
+       f.write(cmd)
+    f.close()
+    VOC = u2py.File("VOC")
+    rec = u2py.DynArray()
+    rec.replace(1,"PA")
+    rec.replace(2,"DISPLAY Start personal web server")
+    rec.replace(3,"DISPLAY Connect to http://localhost:8080")
+    rec.replace(4,"DISPLAY To quit go to http://localhost:8080/stop")
+    rec.replace(5,"DOS /c start_webserver.bat")
+    VOC.write('start_webserver',rec)
+    
   def startUniVerse(self):
     print('Starting UniVerse command shell in the demonstration bookstore')
-    print('Type OFF to quit when you have finished')    
+    print('Type OFF to quit when you have finished') 
+    print('To run the web server, type start_webserver')
     cmd = self.makePath(self.bin_path,'uv')
     os.system(cmd)
     print('Thank you for using the demonstration bookstore')
