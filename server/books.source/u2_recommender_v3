@@ -1,7 +1,7 @@
-       SUBROUTINE u2_recommender_v4(Action, InData, OutData, ErrText )
+       SUBROUTINE u2_recommender_v3(Action, InData, OutData, ErrText )
 * ---------------------------------------------------------------------------
-*  @@Name        : u2_recommender_v4
-*  @@Description : Simply recommend books (fourth version)
+*  @@Name        : u2_recommender_v3
+*  @@Description : Simply recommend books (third version)
 *  @@Version     : 1.0
 * ---------------------------------------------------------------------------
 *  Brief Description
@@ -9,6 +9,8 @@
 *  @@INFO {
 *     The python program runs in the background (via START_RECOMMENDER) and
 *     acts as an http server so as to keep the details in memory.
+*
+*     Please see the user story and history in the Python Samples document.
 *  }
 * ---------------------------------------------------------------------------
 *  Warnings
@@ -33,6 +35,10 @@ $INCLUDE UNIVERSE.INCLUDE UDO.H
 $ENDIF
 
 $INCLUDE books.inc u2_recommender.h
+
+ErrText = ''
+OutData = ''
+
        HostName = "localhost"
        Port = 10009
        ConnectionTimeout = 30000
@@ -153,4 +159,3 @@ CallServer:
        
        Return
        
-

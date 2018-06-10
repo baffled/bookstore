@@ -1,0 +1,199 @@
+$IFDEF UNIDATA
+$BASICTYPE "P"
+$ENDIF
+       PROGRAM U2.RECOMMEND
+* ---------------------------------------------------------------------------
+*  @@Name        : U2.RECOMMEND
+*  @@Description : Simply recommend books (third version)
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO {
+*     This calls the recommendation engine with a title to find:
+*       books that have been bought by the same people who bought this one.
+*       if a client is given, the choices they have already made are filtered.
+*  }
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$IFDEF UNIVERSE
+$OPTIONS PICK
+$INCLUDE UNIVERSE.INCLUDE UDO.H
+$ENDIF
+$INCLUDE books.inc U2_BOOKS.h
+$INCLUDE books.inc u2_recommender.h
+
+       Prompt ''
+
+       Open 'U2_BOOKS' TO U2_BOOKS Else
+          Crt 'Cannot open the U2_BOOKS file'
+          STOP
+       End
+
+       GoSub Main
+       STOP
+
+* --------------------------------------------------------------------------
+* Main
+* --------------------------------------------------------------------------
+Main:
+
+       Done = @False
+       Loop
+          GoSub DoScreen
+       Until Done Do
+       Repeat
+
+       Return
+
+* --------------------------------------------------------------------------
+* CallRecommender
+* --------------------------------------------------------------------------
+CallRecommender:
+       Call u2_recommender_v3(Action, InData, OutData, ErrText)
+
+       If ErrText <> '' Then
+          Crt 'ERROR : ' : ErrText
+       End
+       Return
+
+* --------------------------------------------------------------------------
+* DoScreen
+* --------------------------------------------------------------------------
+DoScreen:
+       NeedRefresh = @True
+       Loop
+          If NeedRefresh Then
+             GoSub ShowScreen
+          End
+          GoSub GetOption
+       Until Done Do
+       Repeat
+       Return
+   
+    
+* --------------------------------------------------------------------------
+* GetOption
+* --------------------------------------------------------------------------
+GetOption:
+       Crt @(30,22):'Enter an option (1-4) or Q to Quit : ' :
+  
+       Crt @(60,22):@(-4):
+       Input Option
+       Begin Case
+          Case UpCase(Option)[1,1] = 'Q'
+             Done = @True
+          Case Option = 1
+             GoSub DoStart
+          Case Option = 2
+             GoSub DoBuild
+          Case Option = 3
+             GoSub DoRecommend
+          Case Option = 4
+             GoSub DoClose
+       End Case
+       Return
+    
+
+* --------------------------------------------------------------------------
+* DoBuild
+* --------------------------------------------------------------------------
+DoBuild:
+       Crt 'Building dataset (may take a couple of minutes)'
+       Action = RECOMMEND_ACTION.BUILD
+       InData = ''
+       GoSub CallRecommender
+
+       Return
+   
+* --------------------------------------------------------------------------
+* DoClose
+* --------------------------------------------------------------------------
+DoClose:
+       Crt "Closing recommendation engine"
+       Action = RECOMMEND_ACTION.CLEAR
+       GoSub CallRecommender
+       Return
+
+* --------------------------------------------------------------------------
+* DoRecommend
+* --------------------------------------------------------------------------
+DoRecommend:
+       Crt 'Book for which to get recommendations : ':
+       Input BookId
+       If BookId = '' Then Return
+
+
+       Crt 'Client to use (optional) : ':
+       Input ClientId
+
+       Crt 'Limit results to (10) : ':
+       Input Limit
+       If Not(Limit Match '1N0N') Then
+          Limit = 10
+       End
+
+
+       Action = RECOMMEND_ACTION.RECOMMEND
+       InData = BookId : @FM : ClientId : @FM : Limit
+       GoSub CallRecommender
+
+       BookList = raise(OutData<1>)
+       CountList = raise(OutData<2>)
+       NoBooks = DCount(BookList,@FM)
+  
+       For ThisBook = 1 To NoBooks
+          BookId = BookList<ThisBook>
+          Read BookRec From U2_BOOKS, BookId Else
+             BookRec = 'Unknown Book'
+          End
+          Crt BookId,BookRec<U2_BOOKS.TITLE>
+       Next
+       Crt 'Press any key to continue ..':
+       Discard = KeyIn()
+       NeedRefresh = @True
+       
+       Return
+
+* --------------------------------------------------------------------------
+* DoStart
+* --------------------------------------------------------------------------
+DoStart:
+       Cmd = 'PHANTOM RUNPY books.pysrc u2_recommender_v3.py'
+       Perform Cmd
+       Return
+       
+* --------------------------------------------------------------------------
+* ShowScreen
+* --------------------------------------------------------------------------
+ShowScreen:
+       NeedRefresh = @False
+   
+       Crt @(-1):
+       Head = 'U2 Bookstore Recommender Engine'
+       Head = @(-13) : (Head 'L78') : @(-14)
+       Crt Head
+       Crt @(5,2):'1. Start the recommender engine'
+       Crt @(5,4):'2. Build the dataset'
+       Crt @(5,6):'3. Ask for a recommendation'
+       Crt @(5,8):'4. Shut down the engine'
+   
+   
+       Return
+
+      

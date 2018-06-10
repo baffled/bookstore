@@ -1,13 +1,12 @@
-# @@Name        : u2_recommender_v4
-# @@Description : Simple recommendations (version 4)
+# @@Name        : u2_recommender_v3
+# @@Description : Simple recommendations (version 3)
 # @@Version     : 1.0
 # -----------------------------------------------------------------------------
 # @@Info{
 #
-#   This switches the socket based u2_recommender_v3 to a standard http
-#   service that can be more easily accessed from web calls and from the
-#   callHTTP() function from the Business Language, removing the need for a
-#   proprietary socket protocol.
+#   This operates as a standard http service that can be easily accessed from 
+#   web calls and from the UniVerse routines by calling the regular
+#   callHTTP() function from the Business Language.
 #
 #   The recommendations are based on other clients' purchases (collaborative
 #   filtering). For each order we examine the list of books, add those to the
@@ -15,7 +14,7 @@
 #   history for the client.
 #
 #   To preserve the arrays, this persists as an http service listener.
-#   See the books.bp u2_recommender_v4 subroutine for the driver information.
+#   See the books.bp u2_recommender_v3 subroutine for the driver information.
 # -----------------------------------------------------------------------------
 import u2py
 import socket
@@ -23,6 +22,8 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import sys
 import json
 import bisect
+import threading
+import os
 
 class u2_recommender:
     def __init__(self):
@@ -130,8 +131,12 @@ class u2_recommender:
         elif action == 'recommend':
             return self.recommend(request['titleId'],request['clientId'],0, request['noWeight'])
         elif action == 'close':
-            self.debugFile.close()
-            exit()
+            # shutdown call only works on another thread.
+            def kill_me(server):
+                server.shutdown()
+            thread = threading.Thread(target=kill_me, args=(self.server,))
+            thread.start()
+            self.send_error(500)
         else:
             return 'Unknown action'
                             
@@ -156,7 +161,6 @@ class RequestHandler(BaseHTTPRequestHandler):
          self.wfile.write(bytes(response,'iso-8859-1'))
       except: 
          self._set_headers()        
-      client.close()
       
       
 def createRecommender():
@@ -170,7 +174,6 @@ if __name__ == "__main__":
     try:
        myServer.serve_forever()
     except KeyboardInterrupt:
-       pass
-    
+       print('Got a keyboard interrupt')
     myServer.server_close()
    

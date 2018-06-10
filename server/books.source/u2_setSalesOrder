@@ -41,7 +41,7 @@ $INCLUDE books.inc U2_ORDERS.h
       OrigRec = ''
       If SalesId = '' Then
          Counter = 0
-         Key = Date() :"*":Time()
+         Key = Date() :"*":Int(Time())
          Found = @False
          Loop
             Counter += 1
