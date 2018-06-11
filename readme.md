@@ -12,7 +12,7 @@ To install the Bookstore Demonstration:
 1. You need the latest copy of git from https://git-scm.com/downloads
 
 2. Clone the git repository 
----git clone http://path_to/bookstore.git
+---git clone https://github.com/baffled/bookstore.git
 
 3. Run the build script
 --- cd repository
