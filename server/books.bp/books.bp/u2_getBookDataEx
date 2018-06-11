@@ -1,0 +1,39 @@
+SUBROUTINE u2_getBookDataEx(BookId, LockFlag, BookData,  ErrText)
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_GetBookDataEx
+*  @@Description : Assemble full details for a book title (external format)
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO{
+*     This returns the book data in its external format for display.
+*  }
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$OPTIONS PICK
+$INCLUDE books.source u2_common.h
+$INCLUDE books.inc U2_BOOKDATA.h
+BookData = ''
+ErrText = ''
+Call u2_getBookData(BookId, LockFlag, BookData,  ErrText)
+BookData<U2_BOOKDATA.SALE_PRICE> = OConv(BookData<U2_BOOKDATA.SALE_PRICE>,'MD2')
+BookData<U2_BOOKDATA.PURCH_PRICE> = OConv(BookData<U2_BOOKDATA.PURCH_PRICE>,'MD2')
+BookData<U2_BOOKDATA.LONG_DESCRIPTION> = Convert(@VM,' ', BookData<U2_BOOKDATA.LONG_DESCRIPTION>)
+RETURN
+

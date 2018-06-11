@@ -16,6 +16,7 @@ import json
 import threading
 
 from bookstore_modules import *
+from u2_recommender_v3 import u2_recommender
 
 def make_request_handler_class(opts):
     '''
@@ -30,6 +31,7 @@ def make_request_handler_class(opts):
         additional class variables.
         '''
         m_opts = opts
+        recommender = u2_recommender()
 
         def do_HEAD(self):
             '''
@@ -73,6 +75,12 @@ def make_request_handler_class(opts):
                 print('Method name ' + methodName)
                 self.do_method(methodName, args)
             
+            elif rpath.startswith('/re'):
+                print('got recommender path')
+                methodName = rpath[4:]
+                print('Recommender method ' + methodName)
+                self.do_recommender(methodName,args)
+                
             elif rpath == '/stop':
                print("Server is stopping ...")
                def kill_me(server):
@@ -122,7 +130,19 @@ def make_request_handler_class(opts):
             instance = targetClass()
             result = instance.run(args)
             self.wfile.write(bytes(json.dumps(result),'utf-8'))
-
+        
+        def do_recommender(self, action, args):
+            request = {'action': action}
+            if len(args):
+               for arg in args:
+                   request[arg] = args[arg][0]
+            print('request ' + str(request))
+            result = self.recommender.processRequest(request)
+            self.send_response(200)  # OK
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(bytes(result,'iso-8859-1'))
+        
         def send_file(self, rpath, args):        
             # Check to see whether the file is stored locally, if so return it
             
@@ -258,6 +278,9 @@ def httpd(opts):
     HTTP server
     '''
     RequestHandlerClass = make_request_handler_class(opts)
+    logging.info('Starting recommendations - please wait ...(level=%s)' % (opts.level))
+    
+    RequestHandlerClass.recommender.build(0)
     server = HTTPServer((opts.host, opts.port), RequestHandlerClass)
     logging.info('Server starting %s:%s (level=%s)' % (opts.host, opts.port, opts.level))
     try:

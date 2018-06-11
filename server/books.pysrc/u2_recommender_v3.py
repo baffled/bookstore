@@ -85,6 +85,7 @@ class u2_recommender:
         myGenre    = str(bookDA.extract(5))
         otherBooks = {}
         self.log('Getting recommendations for ' + myBookId + ' client ' + myClientId)
+        print('Getting recommendations for ' + myBookId + ' client ' + myClientId)
         # get all clients who have purchased this book
         for clientId in self.bookClients[myBookId]:
             bookArray = self.clientBooks[clientId]
@@ -129,7 +130,10 @@ class u2_recommender:
         elif action == 'add': 
             return self.buildOrder(request['orderId'])
         elif action == 'recommend':
-            return self.recommend(request['titleId'],request['clientId'],0, request['noWeight'])
+            titleId = request['titleId'] if 'titleId' in request else ''            
+            clientId = request['clientId'] if 'clientId' in request else ''            
+            noWeight = request['noWeight'] if 'noWeight' in request else ''
+            return self.recommend(titleId,clientId,0, noWeight)
         elif action == 'close':
             # shutdown call only works on another thread.
             def kill_me(server):

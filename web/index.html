@@ -31,7 +31,8 @@
 	function doAdd(id, title, price){
 	   $('#div_detail').foundation('reveal', 'close');
 	   cart.books.push({'id':id, 'title':title, 'price':price});
-	   alert(title + ' added');	   
+	   showMessage(title + ' added','success radius');	
+	   updateCart();   
 	}
 	
 	function doSearch(){
@@ -61,7 +62,7 @@
              }
             $("#results").html(t);
 		}).fail(function(){
-		    alert("Error fetching data");
+		    alert("Error fetching data",'alert round');
 		}); 
 	}
 	function dquote(text){
@@ -69,7 +70,10 @@
 	}
 	
 	function doSaveCart(){
-	   var cartData = {'client' : cart.client, 'books':[]};
+	   var clientId = $("#clientId").val()
+	   var shipId = $("#shipId").val()
+	   
+	   var cartData = {'client' : clientId, 'ship_id':shipId, 'books':[]};
 	   for(var i = 0; i < cart.books.length; i++){
 	      cartData.books.push(cart.books[i].id);
 	   }
@@ -86,18 +90,21 @@
 		 data:content,		 
 		}).done(function(item){
 		  if(item.error){
-		    alert(item.error);
+		    showMessage(item.error,'alert round');
 		  }
 		  if(item.order){
-		    showMessage('Order ' + item.order + ' placed');
-		    cart.books = [];
+		    showMessage('Order ' + item.order + ' placed','success round');
+		    cart.books = [];		    
 		  }
 		});   		
 		$("#div_cart").foundation('reveal','close');
+		updateCart();
 	}
 	
-	function showMessage(text){
-	   alert(text);
+	function showMessage(text, style){
+	   var alertBox = '<div data-alert class="alert-box ' + style + '">' +  text + '<a href="#" class="close">&times;</a></div>';
+       $("#div_messages").html(alertBox).foundation();
+//	   alert(text);
 	}
 	
 	function doShowBook(bookId){
@@ -118,23 +125,69 @@
              
              + "<a class='button' onclick='javascript:doAdd(" + item.id + "," + dquote(item.title) + "," + item.price  + ")'>Add to Cart</a>"                 
             + '</div>'
-            $("#detail").html(t);                     
+            $("#detail").html(t);  
+            doShowRecommendations(bookId);                   
             
 		}).fail(function(){
 		    alert("Error fetching data");
 		}); 
 	}
     
+    function doShowRecommendations(bookId){
+      $.ajax({
+		 url:"/re/recommend?titleId=" + bookId,
+		 dataType:'json',
+		 type:'GET',
+		}).done(function(data){
+		   t = '';
+		    for(var i = 0; i < data.length; i++){
+		       var item = data[i];
+		       t = t + '<li>'
+		         + '<img src="images/' + item.titleId + '.jpg" '
+                 + 'onclick="doShowBook(' + item.titleId + ')" />'                
+                 + '</li>'
+             }
+            $("#recommends").html(t);
+            
+		}).fail(function(){
+		    alert("Error fetching data");
+		}); 
+    }
+	
 	function showCart(){
+	   var total = 0
 	   var t = '<table style="width:100%,height:100%">'
 	       + '<tr><th>Item</th><th>Title</th><th>Price</th></tr>';
-	   for(var i = 0; i < cart.books.length; i++){
-	      var extPrice = cart.books[i].price / 100;
-	      t  = t + '<tr><td>' + cart.books[i].id + '</td><td>' + cart.books[i].title + '</td><td style="text-align:right">' + extPrice + '</tr>';
+	       
+	   for(var i = 0; i < cart.books.length; i++){	      
+	      t  = t + '<tr><td>' + cart.books[i].id + '</td><td>' + cart.books[i].title + '</td><td style="text-align:right">' + cart.books[i].price + '</tr>';
+	      total = total + cart.books[i].price;
 	   }
+	   t  = t + '<tr><td></td><td>TOTAL</td><td style="text-align:right">' + total + '</tr>';
+	   
 	   t = t + '</table>'
 	   $("#cart").html(t);	   
 	}	
+	
+	function stopServer(){
+	
+      $.ajax({
+		 url:"/stop" ,
+		 dataType:'json',
+		 type:'GET',
+		}).done(function(data){
+   		  alert("Stopped Server");
+		}).fail(function(){
+		    alert("Stopped Server");
+		}); 
+    
+	}
+	
+	function updateCart(){
+	   
+	   var t = cart.books.length > 0 ? 'Show Cart (' + cart.books.length + ')' : 'No Items in Cart'
+	   $("#cart").text(t);
+	}
 	
 </script>
 <div id="content">
@@ -167,7 +220,16 @@
 			  	
 			</ul>
 	    </section>
+	     <section class="top-bar-section">
+	       <ul class="right">
+			  <li class="has-form">
+			     <a class="button alert" onclick="javascript:stopServer()" id="btnStop">Stop Server</a>
+			  </li>       
+			  	
+			</ul>
+	    </section>
 	    
+
 	</nav>
   </div>
 </div>
@@ -189,6 +251,9 @@
 	<div class="row" id="detail">
 	   Fetching...
 	</div>
+	<div>Recommended for you:</div>
+	  <ul class="small-block-grid-3 medium-block-grid-6 large-block-grid-12" id="recommends">
+	  </ul>
 	
 	<div><a class="close-reveal-modal">&#215;</a></div>
 </section>
@@ -197,6 +262,18 @@
 			
 	<div class="row" id="cart">
 	   Shoppping cart in here
+	</div>
+	<div>
+	   Shipping type : 
+	   <select id="shipId">
+	     <option value="FREE">Free Shipping (slow)</option>
+	     <option value="FIRST">First Class (slightly quicker)</option>
+	     <option value="EXPRESS">Express (quickest of all)</option>
+	   </select>
+	</div>
+	<div>
+	   Client id : 
+	   <input type="text" size="5" placeholder="Number" id="clientId" />
 	</div>
 	<div><a class="button" href="javascript:doSaveCart()">Save Cart</a></div>
 	<div><a class="close-reveal-modal">&#215;</a></div>

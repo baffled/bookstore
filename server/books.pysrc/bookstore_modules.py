@@ -35,7 +35,7 @@ class api_getbook(BaseAPIClass):
         results = {}
         if "id" in args:
             id = args["id"][0]
-            sub = u2py.Subroutine("u2_getBookData",4)
+            sub = u2py.Subroutine("u2_getBookDataEx",4)
             sub.args[0] = id
             sub.args[1] = '0'
             sub.call()
