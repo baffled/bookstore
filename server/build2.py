@@ -8,14 +8,14 @@ class BookstoreSetup:
     if os.name == 'nt':
       self.acc_home = '..\\universe'
       self.uv_path = 'c:\\u2\\uv'
-      self.asset_path = '..\\..\\repository\\assets'
+      self.asset_path = '..\\..\\bookstore\\assets'
       self.delim = '\\'
       self.pythonexe = 'python.exe'	  
     else:
       self.acc_home = '../universe'
       self.uv_path = '/usr/uv'
       self.delim = '/'
-      self.asset_path = '../../repository/assets'
+      self.asset_path = '../../bookstore/assets'
       self.pythonexe = 'python'
     self.bin_path = self.makePath(self.uv_path, 'bin')
     self.home = os.getcwd()
@@ -50,6 +50,12 @@ class BookstoreSetup:
   def initAccount(self):
     print('Initializing account')
     self.VOC_FILE = u2py.File('VOC')
+    rec = u2py.DynArray()
+    rec.replace(1,'PA')
+    rec.replace(2,'PTERM CASE NOINVERT')
+    self.VOC_FILE.write('LOGIN', rec)
+    
+    u2py.run('PTERM CASE NOINVERT', capture=False)
     u2py.run('LONGNAMES ON', capture=False)
     u2py.run('TERM ,9999', capture=False)
     
@@ -94,7 +100,7 @@ class BookstoreSetup:
   def createFilePointer(self, fileName, pointerName):
     rec = u2py.DynArray()
     rec.replace(1,'F')
-    rec.replace(2,'../../repository/server/' + fileName)
+    rec.replace(2,'../../bookstore/server/' + fileName)
     rec.replace(3,'D_VOC')
     self.VOC_FILE.write(pointerName,rec)
     
@@ -122,6 +128,9 @@ class BookstoreSetup:
           u2py.run(cmd)
 
   def setupPackages(self):
+    cmd = self.makePath(self.python_path,'scripts') + self.delim + 'pip install pip --upgrade'
+    print('Upgrading pip - please ignore any errors')
+    os.system(cmd)
     packageList = [( 'pandas','0.20.3'),('matplotlib','2.2.2')]
     for package in packageList:
        cmd = self.makePath(self.python_path,'scripts') + self.delim + 'pip install '
@@ -140,9 +149,10 @@ class BookstoreSetup:
     thisPath = self.makePath(self.home,'server')
     thisPath = self.makePath(thisPath,'books.pysrc')
     found = False
-    with open(myPath, 'rU') as f:
-      for line in f:
-        if line == thisPath: found = True
+    if os.path.exists(myPath):
+      with open(myPath, 'rU') as f:
+         for line in f:
+            if line == thisPath: found = True
     if found == False:
       open(myPath,'a+').write('\n' + thisPath)
 	 
@@ -154,7 +164,7 @@ class BookstoreSetup:
                      'TEST_SCRIPTS','TEST_STATE']:
       rec = u2py.DynArray()
       rec.replace(1,'F')
-      rec.replace(2,'../../repository/server/' + fileName)
+      rec.replace(2,'../../bookstore/server/' + fileName)
       rec.replace(3,'D_VOC')
       if fileName[-3:] == '.bp':
         rec.replace(4,'M')
@@ -193,17 +203,25 @@ class BookstoreSetup:
   def startUniVerse(self):
     print('Starting UniVerse command shell in the demonstration bookstore')
     print('Type OFF to quit when you have finished') 
-    print('To run the web server, type start_webserver')
     cmd = self.makePath(self.bin_path,'uv')
     os.system(cmd)
     print('Thank you for using the demonstration bookstore')
       
-    
+  def intro(self):
+    print('============================================================================')
+    print('Thank you for installing the demonstration bookstore.')
+    print('  For more information please check out the docs directory')
+    print('  To run a UniVerse command session:\n     type start_uv and OFF when you have finished')
+    print('  To run the Python web server:\n     type start_webserver and browse to http://localhost:8080')
+    print('Press any key to continue')
+    input()
+         
   def run(self):
     self.home = os.getcwd()
     self.createAccount()
     self.initAccount()
-    self.startUniVerse()
+    # self.startUniVerse()
+    self.intro()
 
 
 if __name__ == "__main__":
