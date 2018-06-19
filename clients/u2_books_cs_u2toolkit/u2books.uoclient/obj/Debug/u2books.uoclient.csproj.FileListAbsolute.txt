@@ -11,3 +11,16 @@ R:\bookstore\repository\clients\u2_books_cs_u2toolkit\u2books.uoclient\bin\Debug
 R:\bookstore\repository\clients\u2_books_cs_u2toolkit\u2books.uoclient\bin\Debug\U2.Data.Client.xml
 R:\bookstore\repository\clients\u2_books_cs_u2toolkit\u2books.uoclient\obj\Debug\u2books.uoclient.dll
 R:\bookstore\repository\clients\u2_books_cs_u2toolkit\u2books.uoclient\obj\Debug\u2books.uoclient.pdb
+R:\demo\bookstore\clients\u2_books_cs_u2toolkit\u2books.uoclient\bin\Debug\u2books.uoclient.dll
+R:\demo\bookstore\clients\u2_books_cs_u2toolkit\u2books.uoclient\bin\Debug\u2books.uoclient.pdb
+R:\demo\bookstore\clients\u2_books_cs_u2toolkit\u2books.uoclient\bin\Debug\U2.Data.Client.dll
+R:\demo\bookstore\clients\u2_books_cs_u2toolkit\u2books.uoclient\bin\Debug\u2_books.shared.dll
+R:\demo\bookstore\clients\u2_books_cs_u2toolkit\u2books.uoclient\bin\Debug\Microsoft.Data.Schema.ScriptDom.Sql.dll
+R:\demo\bookstore\clients\u2_books_cs_u2toolkit\u2books.uoclient\bin\Debug\Microsoft.Data.Schema.ScriptDom.dll
+R:\demo\bookstore\clients\u2_books_cs_u2toolkit\u2books.uoclient\bin\Debug\U2.Data.Client.U2Json.dll
+R:\demo\bookstore\clients\u2_books_cs_u2toolkit\u2books.uoclient\bin\Debug\u2_books.shared.pdb
+R:\demo\bookstore\clients\u2_books_cs_u2toolkit\u2books.uoclient\bin\Debug\U2.Data.Client.xml
+R:\demo\bookstore\clients\u2_books_cs_u2toolkit\u2books.uoclient\obj\Debug\u2books.uoclient.csprojResolveAssemblyReference.cache
+R:\demo\bookstore\clients\u2_books_cs_u2toolkit\u2books.uoclient\obj\Debug\u2books.uoclient.csproj.CoreCompileInputs.cache
+R:\demo\bookstore\clients\u2_books_cs_u2toolkit\u2books.uoclient\obj\Debug\u2books.uoclient.dll
+R:\demo\bookstore\clients\u2_books_cs_u2toolkit\u2books.uoclient\obj\Debug\u2books.uoclient.pdb

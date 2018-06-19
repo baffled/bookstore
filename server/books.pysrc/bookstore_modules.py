@@ -1,9 +1,14 @@
 # Modules for the bookstore personal web server
 
 import u2py
+import uuid
 import collections
 import json
+import pandas as pd
 import xml.etree.ElementTree as ET
+import matplotlib.pyplot as plt
+
+from matplotlib import rcParams
 
 class BaseAPIClass:
     def run(self,args):
@@ -86,6 +91,38 @@ class api_savecart(BaseAPIClass):
         else:
             errText = 'Missing cart details'
             
-        return {'order':orderId,'error':errText}        
+        return {'order':orderId,'error':errText}  
+
+class api_chartsales(BaseAPIClass):
+    def run(self, args):
+      imageName = ''
+      errText = ''
+      try:
+          startDate = args['start_date']
+          endDate = args['end_date']
+          path = '..\\..\\bookstore\\web\\work\\'
+          cmd = "SELECT BOOK_GENRE, SUM(QTY) FROM UNNEST U2_ORDERS ON BOOK_ID "
+          cmd = cmd + "WHERE ORDER_DATE BETWEEN '" + startDate[0]
+          cmd = cmd + "' AND '" + endDate[0]
+          cmd = cmd + "' GROUP BY BOOK_GENRE TOXML;"
+          xmlData = u2py.run(cmd, capture=True)	
+          etree = ET.fromstring(xmlData.replace('\n',''))
+          dfcols = ['Genre','Qty']
+          df = pd.DataFrame(columns=dfcols)
+          for i in etree.iter(tag='U2_ORDERS'):
+             df = df.append(pd.Series([i.get('BOOK_GENRE'),int(i.get('QTY')) ],index=dfcols),ignore_index=True)
+    # not before pandas 0.21df.infer_objects()
+          df[['Qty']] = df[['Qty']].apply(pd.to_numeric)
+          rcParams.update({'figure.autolayout':True})
+          ax = df['Qty'].plot()
+          ax.set_xticks(df.index)
+          ax.set_xticklabels(df.Genre, rotation=90)
+          imageName = str(uuid.uuid4()) + '.png'
+          plt.savefig(path + imageName)
+      except:
+        errText = "Error building chart"
+      return {'chart' : imageName,'error' : errText}
+      
+        
         
 	        

@@ -28,10 +28,12 @@ SUBROUTINE u2_plotGenreSales(InData, OutData, ErrText)
 $OPTIONS PICK
 OutData = ''
 ErrText = ''
+If Num(InData<1>) Then
 StartDate = OConv(InData<1>,'D4')
 EndDate   = OConv(InData<2>,'D4')
+End
 Path = ''
-Open 'images' To IMAGES Then
+OpenPath '..\..\bookstore\web\images' To IMAGES Then
 Status FStat From IMAGES Then
 Path = FStat<27>
 End

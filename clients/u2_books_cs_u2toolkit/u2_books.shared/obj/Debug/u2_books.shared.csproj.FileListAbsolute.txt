@@ -15,3 +15,9 @@ R:\bookstore\repository\clients\u2_books_cs_u2toolkit\u2_books.shared\obj\Debug\
 R:\bookstore\repository\clients\u2_books_cs_u2toolkit\u2_books.shared\obj\Debug\u2_books.shared.csproj.CoreCompileInputs.cache
 R:\bookstore\repository\clients\u2_books_cs_u2toolkit\u2_books.shared\obj\Debug\u2_books.shared.dll
 R:\bookstore\repository\clients\u2_books_cs_u2toolkit\u2_books.shared\obj\Debug\u2_books.shared.pdb
+R:\demo\bookstore\clients\u2_books_cs_u2toolkit\u2_books.shared\bin\Debug\u2_books.shared.dll
+R:\demo\bookstore\clients\u2_books_cs_u2toolkit\u2_books.shared\bin\Debug\u2_books.shared.pdb
+R:\demo\bookstore\clients\u2_books_cs_u2toolkit\u2_books.shared\obj\Debug\u2_books.shared.csproj.CoreCompileInputs.cache
+R:\demo\bookstore\clients\u2_books_cs_u2toolkit\u2_books.shared\obj\Debug\u2_books.shared.dll
+R:\demo\bookstore\clients\u2_books_cs_u2toolkit\u2_books.shared\obj\Debug\u2_books.shared.pdb
+R:\demo\bookstore\clients\u2_books_cs_u2toolkit\u2_books.shared\obj\Debug\u2_books.shared.csprojResolveAssemblyReference.cache

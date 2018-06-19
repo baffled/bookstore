@@ -1,0 +1,3 @@
+# Identify binary files in this account
+*.jpg binary
+*.png binary
