@@ -1,4 +1,4 @@
-     SUBROUTINE u2_recommender_v2( Action, InData, OutData, ErrText)
+       SUBROUTINE u2_recommender_v2( Action, InData, OutData, ErrText)
 * ---------------------------------------------------------------------------
 *  @@Name        : u2_recommender_v2
 *  @@Description : Simply recommend books (second version)
@@ -38,181 +38,195 @@ $INCLUDE books.inc U2_BOOKS.h
 $INCLUDE books.inc U2_ORDERS.h
      
 $INCLUDE books.inc u2_recommender.h
-     COMMON /MODEL/ hClientsToBooks, hBooksToClients
+       COMMON /MODEL/ hClientsToBooks, hBooksToClients, ModelBuilt
      
      
-     OutData = ''
-     ErrText = ''
+       OutData = ''
+       ErrText = ''
      
-     Open 'U2_ORDERS' To F.ORDERS Else
-        Crt 'Cannot open ORDERS'
-        STOP
-     End
-     Open 'U2_BOOKS' To F.BOOKS Else
-        Crt 'Cannot open BOOKS'
-        STOP
-     End
+       Open 'U2_ORDERS' To F.ORDERS Else
+          Crt 'Cannot open ORDERS'
+          STOP
+       End
+       Open 'U2_BOOKS' To F.BOOKS Else
+          Crt 'Cannot open BOOKS'
+          STOP
+       End
      
-     Begin Case
-     Case Action = RECOMMEND_ACTION.BUILD
-        GoSub Build
-     Case Action = RECOMMEND_ACTION.ORDER
-        GoSub BuildOrder
-     Case Action = RECOMMEND_ACTION.REPORT
-        Gosub Report
-     Case Action = RECOMMEND_ACTION.RECOMMEND
-        GoSub Recommend
-     Case Action = RECOMMEND_ACTION.CLEAR
-        GoSub ClearDown
-     End Case
+       Begin Case
+          Case Action = RECOMMEND_ACTION.BUILD
+             GoSub Build
+          Case Action = RECOMMEND_ACTION.ORDER
+             GoSub BuildOrder
+          Case Action = RECOMMEND_ACTION.REPORT
+             Gosub Report
+          Case Action = RECOMMEND_ACTION.RECOMMEND
+             GoSub Recommend
+          Case Action = RECOMMEND_ACTION.CLEAR
+             GoSub ClearDown
+        
+          Case Action = 'DUMP'
+             GoSub Dump
+      
+       End Case
      
-     RETURN
+       RETURN
      
      
 * --------------------------------------------------------------------------
 * Build : build the initial sets, with the ability to select back a subset
 * --------------------------------------------------------------------------
 Build:
-     Limit = InData<1>
-     Line = ''
-     Ct = 0
+       Limit = InData<1>
+       ReportInterval = InData<2>
+       ReportBreaks   = InData<3>
      
-     Ok = UDOCreate(UDO_OBJECT, hClientsToBooks)
-     Ok = UDOCreate(UDO_OBJECT, hBooksToClients)
+       Line = ''
+       Ct = 0
+     
+       Ok = UDOCreate(UDO_OBJECT, hClientsToBooks)
+       Ok = UDOCreate(UDO_OBJECT, hBooksToClients)
      
      
-     Select F.ORDERS
-     Fin = @False
-     Loop
-        Ct += 1
-        ReadNext OrderId Else Fin = @TRUE
-     Until Fin Or (Limit And (Ct > Limit)) Do
-        GoSub BuildOrderToModel
-     Repeat
+       Select F.ORDERS
+       Fin = @False
+       Loop
+          Ct += 1
+          ReadNext OrderId Else Fin = @TRUE
+       Until Fin Or (Limit And (Ct > Limit)) Do
+          GoSub BuildOrderToModel
+          If ReportInterval And Not(Mod(Ct,ReportInterval)) Then
+             Crt @(0):'Processed sales ': Ct:
+             If ReportBreaks Then
+                Input Wait
+             End
+          End
+       Repeat
      
-     Return
+       ModelBuilt = @TRUE
+     
+       Return
      
 * --------------------------------------------------------------------------
 * BuildOrder : add a new order into the data set
 * --------------------------------------------------------------------------
 BuildOrder:
-     OrderId = InData<1>
-     GoSub BuildOrderToModel
-     Return
+       OrderId = InData<1>
+       GoSub BuildOrderToModel
+       Return
      
 *---------------------------------------------------------------------------
 * BuildOrderToModel
 *---------------------------------------------------------------------------
 BuildOrderToModel:
-     Read OrderRec From F.ORDERS, OrderId Else
-        Return
-     End
-     ClientId = OrderRec<U2_ORDERS.CLIENT_ID>
+       Read OrderRec From F.ORDERS, OrderId Else
+          Return
+       End
+       ClientId = OrderRec<U2_ORDERS.CLIENT_ID>
      
-     NoLines = DCount(OrderRec<U2_ORDERS.BOOK_ID>,@VM)
-     For ThisLine = 1 To NoLines
-        BookId = OrderRec<U2_ORDERS.BOOK_ID, ThisLine>
+       NoLines = DCount(OrderRec<U2_ORDERS.BOOK_ID>,@VM)
+       For ThisLine = 1 To NoLines
+          BookId = OrderRec<U2_ORDERS.BOOK_ID, ThisLine>
         
-        Ok = UDOGetProperty(hClientsToBooks,ClientId,hBookArray,Type)
-        If Ok <> UDO_SUCCESS Then
-           Ok = UDOCreate(UDO_ARRAY,hBookArray)
-           Ok = UDOSetProperty(hClientsToBooks,ClientId,hBookArray)
-        End
+          Ok = UDOGetProperty(hClientsToBooks,ClientId,hBookArray,Type)
+          If Ok <> UDO_SUCCESS Then
+             Ok = UDOCreate(UDO_ARRAY,hBookArray)
+             Ok = UDOSetProperty(hClientsToBooks,ClientId,hBookArray)
+          End
         
 * check we haven't already got this book for the client
         
-        Found = @False
-        Ok = UDOArrayGetSize(hBookArray, Size)
-        For This = 1 To Size Until Found
-           Ok = UDOArrayGetItem(hBookArray, This, Value, T)
-           If Value = BookId Then
-              Found = @True
-           End
-        Next
+          Found = @False
+          Ok = UDOArrayGetSize(hBookArray, Size)
+          For This = 1 To Size Until Found
+             Ok = UDOArrayGetItem(hBookArray, This, Value, T)
+             If Value = BookId Then
+                Found = @True
+             End
+          Next
         
-        If Not(Found) Then
-           Ok = UDOArrayAppendItem(hBookArray, BookId)
+          If Not(Found) Then
+             Ok = UDOArrayAppendItem(hBookArray, BookId)
            
-           Ok = UDOGetProperty(hBooksToClients,BookId,hClientArray,Type)
-           If Ok <> UDO_SUCCESS Then
-              Ok = UDOCreate(UDO_ARRAY,hClientArray)
-              Ok = UDOSetProperty(hBooksToClients,BookId,hClientArray)
-           End
-           Ok = UDOArrayAppendItem(hClientArray, ClientId)
-        End
-     Next
+             Ok = UDOGetProperty(hBooksToClients,BookId,hClientArray,Type)
+             If Ok <> UDO_SUCCESS Then
+                Ok = UDOCreate(UDO_ARRAY,hClientArray)
+                Ok = UDOSetProperty(hBooksToClients,BookId,hClientArray)
+             End
+             Ok = UDOArrayAppendItem(hClientArray, ClientId)
+          End
+       Next
      
-     Return
+       Return
      
 *---------------------------------------------------------------------------
 * ClearDown
 *---------------------------------------------------------------------------
 ClearDown:
-     Ok = UDOFree(hClientsToBooks)
-     Ok = UDOFree(hBooksToClients)
-     return
+       Ok = UDOFree(hClientsToBooks)
+       Ok = UDOFree(hBooksToClients)
+       return
      
 *---------------------------------------------------------------------------
 * Recommend
 *---------------------------------------------------------------------------
 Recommend:
      
-     MyBookId   = InData<1>
-     MyClientId = InData<2>
-     Limit      = InData<3>
-     NoWeights  = InData<4>
+       MyBookId   = InData<1>
+       MyClientId = InData<2>
+       Limit      = InData<3>
+       NoWeights  = InData<4>
      
-     Read BookRec From F.BOOKS, MyBookId Else
-        BookRec = ''
-     End
-     AuthorId = BookRec<U2_BOOKS.AUTHOR_ID>
-     Genre    = BookRec<U2_BOOKS.GENRE>
+       Read BookRec From F.BOOKS, MyBookId Else
+          BookRec = ''
+       End
+       AuthorId = BookRec<U2_BOOKS.AUTHOR_ID>
+       Genre    = BookRec<U2_BOOKS.GENRE>
      
 * Find all the clients that have bought this book
-     Ok = UDOGetProperty(hBooksToClients, MyBookId, hClientArray, Type)
-     If Ok <> UDO_SUCCESS Then
-        Return
-     End
+       Ok = UDOGetProperty(hBooksToClients, MyBookId, hClientArray, Type)
+       If Ok <> UDO_SUCCESS Then
+          Return
+       End
      
 * for each of these get the other books they have bought and
 * put these into an array
-     BookList = ''
-     BookCounts = ''
-     NoClients = 0
-     Ok = UDOArrayGetSize(hClientArray, NoClients)
+       BookList = ''
+       BookCounts = ''
+       NoClients = 0
+       Ok = UDOArrayGetSize(hClientArray, NoClients)
      
-     For ThisClient = 1 To NoClients
-        Ok = UDOArrayGetItem(hClientArray, ThisClient, ClientId, Type)
-        If ClientId <> MyClientId Then
-           Ok = UDOGetProperty(hClientsToBooks, ClientId, hBookArray, Type)
-           Ok = UDOArrayGetSize(hBookArray, NoBooks)
-           For ThisBook = 1 To NoBooks
-              Ok = UDOArrayGetItem(hBookArray, ThisBook, BookId, Type)
-              If BookId <> MyBookId Then
-                 Locate BookId In BookList By 'AR' Setting Pos Else
-                    Ins BookId Before BookList<Pos>
-                    Ins 0 Before BookCounts<Pos>
-                 End
-                 BookCounts<Pos> += 1
-              End
-           Next
-        End
-     Next
-     
-     NoBooks = DCount(BookList,@FM)
+       For ThisClient = 1 To NoClients
+          Ok = UDOArrayGetItem(hClientArray, ThisClient, ClientId, Type)
+          If ClientId <> MyClientId Then
+             Ok = UDOGetProperty(hClientsToBooks, ClientId, hBookArray, Type)
+             Ok = UDOArrayGetSize(hBookArray, NoBooks)
+             For ThisBook = 1 To NoBooks
+                Ok = UDOArrayGetItem(hBookArray, ThisBook, BookId, Type)
+                If BookId <> MyBookId Then
+                   Locate BookId In BookList By 'AR' Setting Pos Else
+                      Ins BookId Before BookList<Pos>
+                      Ins 0 Before BookCounts<Pos>
+                   End
+                   BookCounts<Pos> += 1
+                End
+             Next
+          End
+       Next
+       
 * Strip out any I have already bought
-     If MyClientId <> '' Then
-        Ok = UDOGetProperty(hClientsToBooks, MyClientId, hBookArray, Type)
-        Ok = UDOArrayGetSize(hBookArray, Size)
-        For This = 1 To Size
-           Ok = UDOArrayGetItem(hBookArray, This, Value, T)
-           Locate Value In BookList Setting Pos Then
-              Del BookList<Pos>
-              Del BookCounts<Pos>
-              NoBooks -= 1
-           End
-        Next     
-     End
+       If MyClientId <> '' Then
+          Ok = UDOGetProperty(hClientsToBooks, MyClientId, hBookArray, Type)
+          Ok = UDOArrayGetSize(hBookArray, Size)
+          For This = 1 To Size
+             Ok = UDOArrayGetItem(hBookArray, This, Value, T)
+             Locate Value In BookList Setting Pos Then
+                Del BookList<Pos>
+                Del BookCounts<Pos>
+                NoBooks -= 1
+             End
+          Next
+       End
      
 * Now we apply weightings to all of these
      
@@ -230,33 +244,67 @@ Recommend:
      End
      
 * Finally organize based on their weighted counts
-     OrderedCounts = ''
-     OrderedBooks = ''
-     For ThisBook = 1 To NoBooks
-        Locate BookCounts<ThisBook> In OrderedCounts By 'DR' Setting Pos Else Null
-        Ins BookCounts<ThisBook> Before OrderedCounts<Pos>
-        Ins BookList<ThisBook> Before OrderedBooks<Pos>
-     Next
-     If Limit Then
-        OrderedBooks = OrderedBooks[@FM, 1, Limit]
-        OrderedCounts = OrderedCounts[@FM, 1, Limit]
-     End
+       OrderedCounts = ''
+       OrderedBooks = ''
+       For ThisBook = 1 To NoBooks
+          Locate BookCounts<ThisBook> In OrderedCounts By 'DR' Setting Pos Else Null
+          Ins BookCounts<ThisBook> Before OrderedCounts<Pos>
+          Ins BookList<ThisBook> Before OrderedBooks<Pos>
+       Next
+       If Limit Then
+          OrderedBooks = OrderedBooks[@FM, 1, Limit]
+          OrderedCounts = OrderedCounts[@FM, 1, Limit]
+       End
      
-     OutData<1> = Lower(OrderedBooks)
-     OutData<2> = Lower(OrderedCounts)
+       OutData<1> = Lower(OrderedBooks)
+       OutData<2> = Lower(OrderedCounts)
      
-     Return
-     
+       Return
+*---------------------------------------------------------------------------
+* Dump for debugging
+*---------------------------------------------------------------------------
+Dump:
+       OpenSeq 'c:\temp\client_books2.txt' To OFL Else
+          Create OFL Else STOP
+       End
+       Loop
+          Ok = UDOGetNextProperty(hClientsToBooks, ClientId, hBookArray, Type)
+       Until Ok = UDO_ERROR Do
+          Line = ''
+          Ok = UDOArrayGetSize(hBookArray, NoBooks)
+          For ThisBook = 1 To NoBooks
+             Ok = UDOArrayGetItem(hBookArray, ThisBook, BookId, Type)
+             Locate BookId In Line By 'AR' Setting Pos Else
+                Ins BookId Before Line<Pos>
+             End
+          Next
+          WriteSeq ClientId:':': Convert(@FM,',',Line) On OFL Else Null
+       Repeat
+       CloseSeq OFL
+    
+       OpenSeq 'c:\temp\book_clients2.txt' To OFL Else
+          Create OFL Else STOP
+       End
+       
+       Loop
+          Ok = UDOGetNextProperty(hBooksToClients, BookId, hClientArray, Type)
+       Until Ok = UDO_ERROR Do
+          Line = ''
+          Ok = UDOArrayGetSize(hClientArray, NoClients)
+          For ThisClient = 1 To NoClients
+             Ok = UDOArrayGetItem(hClientArray, ThisClient, ClientId, Type)
+             Locate ClientId In Line By 'AR' Setting Pos Else
+                Ins ClientId Before Line<Pos>
+             End
+          Next
+          WriteSeq BookId:':': Convert(@FM,',',Line) On OFL Else NULL
+       Repeat
+       CloseSeq OFL
+       Return
 *---------------------------------------------------------------------------
 * Report
 *---------------------------------------------------------------------------
 Report:
-     Fin = @False
-     Loop
-        Ok = UDOGetNextProperty(hClientsToBooks, ClientId, hBookArray, ValueType)
-     Until Ok <> UDO_SUCCESS Do
-        Ok = UDOArrayGetSize(hBookArray, Size)
-        Crt ClientId, Size
-     Repeat
+       OutData = ModelBuilt
      
-     return
+       Return

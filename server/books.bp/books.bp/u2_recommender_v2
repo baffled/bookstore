@@ -35,7 +35,7 @@ $INCLUDE UNIVERSE.INCLUDE UDO.H
 $INCLUDE books.inc U2_BOOKS.h
 $INCLUDE books.inc U2_ORDERS.h
 $INCLUDE books.inc u2_recommender.h
-COMMON /MODEL/ hClientsToBooks, hBooksToClients
+COMMON /MODEL/ hClientsToBooks, hBooksToClients, ModelBuilt
 OutData = ''
 ErrText = ''
 Open 'U2_ORDERS' To F.ORDERS Else
@@ -57,6 +57,8 @@ Case Action = RECOMMEND_ACTION.RECOMMEND
 GoSub Recommend
 Case Action = RECOMMEND_ACTION.CLEAR
 GoSub ClearDown
+Case Action = 'DUMP'
+GoSub Dump
 End Case
 RETURN
 * --------------------------------------------------------------------------
@@ -64,6 +66,8 @@ RETURN
 * --------------------------------------------------------------------------
 Build:
 Limit = InData<1>
+ReportInterval = InData<2>
+ReportBreaks   = InData<3>
 Line = ''
 Ct = 0
 Ok = UDOCreate(UDO_OBJECT, hClientsToBooks)
@@ -75,7 +79,14 @@ Ct += 1
 ReadNext OrderId Else Fin = @TRUE
 Until Fin Or (Limit And (Ct > Limit)) Do
 GoSub BuildOrderToModel
+If ReportInterval And Not(Mod(Ct,ReportInterval)) Then
+Crt @(0):'Processed sales ': Ct:
+If ReportBreaks Then
+Input Wait
+End
+End
 Repeat
+ModelBuilt = @TRUE
 Return
 * --------------------------------------------------------------------------
 * BuildOrder : add a new order into the data set
@@ -168,7 +179,6 @@ End
 Next
 End
 Next
-NoBooks = DCount(BookList,@FM)
 * Strip out any I have already bought
 If MyClientId <> '' Then
 Ok = UDOGetProperty(hClientsToBooks, MyClientId, hBookArray, Type)
@@ -180,7 +190,7 @@ Del BookList<Pos>
 Del BookCounts<Pos>
 NoBooks -= 1
 End
-Next     
+Next
 End
 * Now we apply weightings to all of these
 If Not(NoWeights) Then
@@ -211,14 +221,47 @@ OutData<1> = Lower(OrderedBooks)
 OutData<2> = Lower(OrderedCounts)
 Return
 *---------------------------------------------------------------------------
+* Dump for debugging
+*---------------------------------------------------------------------------
+Dump:
+OpenSeq 'c:\temp\client_books2.txt' To OFL Else
+Create OFL Else STOP
+End
+Loop
+Ok = UDOGetNextProperty(hClientsToBooks, ClientId, hBookArray, Type)
+Until Ok = UDO_ERROR Do
+Line = ''
+Ok = UDOArrayGetSize(hBookArray, NoBooks)
+For ThisBook = 1 To NoBooks
+Ok = UDOArrayGetItem(hBookArray, ThisBook, BookId, Type)
+Locate BookId In Line By 'AR' Setting Pos Else
+Ins BookId Before Line<Pos>
+End
+Next
+WriteSeq ClientId:':': Convert(@FM,',',Line) On OFL Else Null
+Repeat
+CloseSeq OFL
+OpenSeq 'c:\temp\book_clients2.txt' To OFL Else
+Create OFL Else STOP
+End
+Loop
+Ok = UDOGetNextProperty(hBooksToClients, BookId, hClientArray, Type)
+Until Ok = UDO_ERROR Do
+Line = ''
+Ok = UDOArrayGetSize(hClientArray, NoClients)
+For ThisClient = 1 To NoClients
+Ok = UDOArrayGetItem(hClientArray, ThisClient, ClientId, Type)
+Locate ClientId In Line By 'AR' Setting Pos Else
+Ins ClientId Before Line<Pos>
+End
+Next
+WriteSeq BookId:':': Convert(@FM,',',Line) On OFL Else NULL
+Repeat
+CloseSeq OFL
+Return
+*---------------------------------------------------------------------------
 * Report
 *---------------------------------------------------------------------------
 Report:
-Fin = @False
-Loop
-Ok = UDOGetNextProperty(hClientsToBooks, ClientId, hBookArray, ValueType)
-Until Ok <> UDO_SUCCESS Do
-Ok = UDOArrayGetSize(hBookArray, Size)
-Crt ClientId, Size
-Repeat
-return
+OutData = ModelBuilt
+Return

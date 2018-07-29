@@ -52,14 +52,20 @@ class u2_recommender:
         self.buildOrderToModel(orderDA)
         return 1
         
-    def buildOrderToModel(self, orderDA):            
-        order = orderDA.to_list()
-        clientId = order[0]
-        if len(order) < 10: return
-        self.log('adding ' + str(len(order[9])) + ' books')
-        for bookId in order[9]:
+    def buildOrderToModel(self, orderDA):
+        # it would be much quicker to use to_list() but that fails. 
+        # order = orderDA.to_list()
+        # clientId = order[0]
+        # if len(order) < 10: return
+        # for bookId in order[9]:
+        
+        if orderDA.dcount(u2py.FM) < 10: return
+        s = orderDA.extract(10).dcount(u2py.VM)        
+        clientId = str(orderDA.extract(1))
+        for i in range(1, s+1):
+           bookId = str(orderDA.extract(10,i))
            if clientId not in self.clientBooks: 
-              self.clientBooks[clientId] = [bookId]
+              self.clientBooks[clientId] = [bookId]              
            else:
               pos = bisect.bisect(self.clientBooks[clientId], bookId)
               if not (pos > 0 and self.clientBooks[clientId][pos-1] == bookId):
@@ -112,6 +118,7 @@ class u2_recommender:
                except:
                    otherBooks[bookId] = 0
         # sort into reverse order of weighted values
+        
         sortedBooks = []
         for key, value in sorted(otherBooks.items(), key=lambda item: (item[1], item[0]), reverse=True):            
             sortedBooks.append({'titleId': key,'counter' :value})
@@ -124,7 +131,7 @@ class u2_recommender:
         except:
             action = 'unknown'
            
-#        print("got action %s", action) 
+        print("got action %s", action) 
         if action == 'build': 
             return self.build(0)
         elif action == 'add': 
@@ -141,9 +148,24 @@ class u2_recommender:
             thread = threading.Thread(target=kill_me, args=(self.server,))
             thread.start()
             self.send_error(500)
+        elif action == 'dump':
+           return self.dump()
         else:
             return 'Unknown action'
-                            
+            
+    def dump(self):  
+           
+       try:
+          f2 = open('book_clients3.txt','a')
+          for i in range(1,351):
+             f2.write(str(i) + ':' + str(self.bookClients[str(i)]) + '\n')
+       except Exception as e:
+          template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+          message = template.format(type(e).__name__, e.args)
+          print (message)          
+       print('after the call')              
+       return 1
+    
 class RequestHandler(BaseHTTPRequestHandler):
    def _set_headers(self):
         self.send_response(200)

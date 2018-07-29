@@ -1,0 +1,227 @@
+PROGRAM U2.RECOMMENDER.3
+* ---------------------------------------------------------------------------
+*  @@Name        : U2.RECOMMENDER.3
+*  @@Description : Demonstrate the second iteration of the recommender.
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO {
+*    Please see the accompanying story and document.
+*
+*    The team likes the first iteration of the recommender for its speed but
+*    decided it was too complex to maintain. Using Python for the core
+*    functionality would be easier.
+*
+*    This version runs the python routine as a background service known as
+*    a Phantom. This keeps the recommendations in memory and it called over
+*    an HTTP connection using the CallHTTP functionality in UniVerse.
+*
+*    This is further refined in the following recommender samples.
+*  }
+*
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$OPTIONS PICK
+$INCLUDE books.inc u2_recommender.h
+$INCLUDE books.inc U2_BOOKS.h
+GoSub Init
+GoSub Main
+STOP
+* --------------------------------------------------------------------------
+* Init
+* --------------------------------------------------------------------------
+Init:
+Prompt ''
+Depth = @CRTHIGH
+Width = @CRTWIDE
+Mask  = 'L#':(Width-2)
+PY    = Depth - 3
+Built = @False
+Open 'U2_BOOKS' To U2_BOOKS Else
+Crt 'Cannot open the U2_BOOKS File'
+STOP
+End
+Action = RECOMMEND_ACTION.REPORT
+GoSub CallSub
+Built = OutData
+Return
+* --------------------------------------------------------------------------
+* Main
+* --------------------------------------------------------------------------
+Main:
+AllDone = @False
+Refresh = @True
+Loop
+If Refresh Then
+GoSub ShowScreen
+End
+GoSub PromptForOption
+Until AllDone Do
+Repeat
+Return
+* --------------------------------------------------------------------------
+* CallSub
+* --------------------------------------------------------------------------
+CallSub:
+OutData = ''
+ErrText = ''
+Call u2_recommender_v3(Action, InData, OutData, ErrText)
+Return
+* --------------------------------------------------------------------------
+* DoBuild:
+* --------------------------------------------------------------------------
+DoBuild:
+GoSub ShowHeader
+Crt @(5,5):'Please confirm that you wish to do this. This may take a couple of minutes.'
+Done = @False
+Loop
+Crt @(0,PY):@(-4):'Continue (Y/N) : ':
+Input Ans
+Ans = UpCase(Trim(Ans)[1,1])
+Begin Case
+Case Ans = 'N'
+Done = @True
+Case Ans = 'Y'
+Done= @True
+Case @True
+End Case
+Until Done Do
+Repeat
+Crt @(0,10):
+If Ans = 'Y' Then
+Action = RECOMMEND_ACTION.BUILD
+InData = ''
+InData<2> = 1000 ;* report interval
+InData<3> = @False ;* don't break for reporting
+GoSub CallSub
+End
+GoSub PressAnyKey
+Return
+* --------------------------------------------------------------------------
+* DoDump
+* --------------------------------------------------------------------------
+DoDump:
+Action = 'DUMP'
+InData = ''
+GoSub CallSub
+GoSub PressAnyKey
+Return
+* --------------------------------------------------------------------------
+* DoQuery
+* --------------------------------------------------------------------------
+DoQuery:
+GoSub ShowHeader
+Call u2_book_search('',BookId,ErrText)
+If BookId = '' Then
+Return
+End
+GoSub ShowHeader
+Action = RECOMMEND_ACTION.RECOMMEND
+InData = ''
+InData<1> = BookId
+InData<2> = '' ;* do not supply a client
+InData<3> = 10 ;* limit
+InData<4> = @False ;* apply weightings
+GoSub CallSub
+IdList = OutData
+BookList = Raise(IdList<1>)
+BookCounts = Raise(IdList<2>)
+Read BookRec From U2_BOOKS, BookId Then
+Crt @(0,5):'Recommendations for ':BookId
+Crt @(0,6):(BookRec<U2_BOOKS.TITLE> Mask)
+Crt @(0,8):'Rank Book Title':@(68):'Count'
+For This = 1 To 10
+BookId = BookList<This>
+BookCount = BookCounts<This>
+If BookId Then
+Read BookRec From U2_BOOKS, BookId Else BookRec = ''
+Line = (This 'L#5'):(BookId 'L#5')
+Line := ' ':(BookRec<U2_BOOKS.TITLE> 'L#50')
+Line := ' ':(BookCount 'R#10')
+Crt @(0,This + 10):Line:
+End
+Next
+End
+GoSub PressAnyKey
+Return
+* --------------------------------------------------------------------------
+* DoStart
+* --------------------------------------------------------------------------
+DoStart:
+Cmd = 'PHANTOM RUNPY books.pysrc u2_recommender_v3.py'
+Perform Cmd
+GoSub PressAnyKey
+Return
+* --------------------------------------------------------------------------
+* DoStop
+* --------------------------------------------------------------------------
+DoStop:
+Crt "Closing recommendation engine"
+Action = RECOMMEND_ACTION.CLEAR
+GoSub CallSub
+Return
+* --------------------------------------------------------------------------
+* PromptForOption
+* --------------------------------------------------------------------------
+PromptForOption:
+Crt @(0,PY):@(-4):'Please enter option or Q to Quit ':
+Input Ans
+Ans = UpCase(Ans[1,1])
+Begin Case
+Case Ans = 'Q'
+AllDone = @True
+Case Ans = 1
+GoSub DoStart
+Case Ans = 2
+GoSub DoBuild
+Case Ans = 3
+GoSub DoQuery
+Case Ans = 4
+GoSub DoStop
+Case Ans = 5
+GoSub DoDump
+End Case
+Return
+* --------------------------------------------------------------------------
+* PressAnyKey
+* --------------------------------------------------------------------------
+PressAnyKey:
+Crt @(0,PY):@(-4):'Press any key to continue : ':
+Input Ans,1:
+Return
+* --------------------------------------------------------------------------
+* ShowHeader
+* --------------------------------------------------------------------------
+ShowHeader:
+Head = 'U2 Bookstore Recommender Sample 3 (Python)'
+Crt @(-1):
+Crt @(-13) : (Head Mask) : @(-14)
+Return
+* --------------------------------------------------------------------------
+* ShowScreen
+* --------------------------------------------------------------------------
+ShowScreen:
+GoSub ShowHeader
+Crt @(5,6) : '1. Start the recommendations engine'
+Crt @(5,9) : '2. Build the database'
+Crt @(5,12): '3. Query the database'
+Crt @(5,15): '4. Stop the recommendations engine'
+Crt @(5,18): '5. Dump the database'
+Return
+

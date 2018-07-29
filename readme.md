@@ -3,7 +3,8 @@
 This simple application demonstrates the features of the Rocket MultiValue platforms.
 
 To run this you will need to install UniVerse Personal Edition on Windows from the
-Rocket Software website.
+Rocket Software website. Please see the Getting Started guide under docs for instructions
+on installing UniVerse and the necessary middleware.
 
 ## Installation
 
@@ -27,6 +28,8 @@ To install the Bookstore Demonstration:
 ## Documentation
 
 See the docs folder in the repository.
+
+The MultiValue Bookstore Getting Started Guide is the place to start.
 
 ## Licence
 

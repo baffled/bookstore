@@ -46,6 +46,8 @@ Case Action = RECOMMEND_ACTION.RECOMMEND
 GoSub DoRecommend
 Case Action = RECOMMEND_ACTION.CLEAR
 GoSub DoClose
+Case Action = 'DUMP'
+GoSub DoDump
 End Case
 Return       
 * --------------------------------------------------------------------------
@@ -67,6 +69,13 @@ RETURN
 * --------------------------------------------------------------------------
 DoClose:
 Pkt = '{"action":"close"}'
+GoSub CallServer
+RETURN
+* --------------------------------------------------------------------------
+* DoDump
+* --------------------------------------------------------------------------
+DoDump:
+Pkt = '{"action":"dump"}'
 GoSub CallServer
 RETURN
 * --------------------------------------------------------------------------

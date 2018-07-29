@@ -93,10 +93,15 @@ $INCLUDE books.inc u2_recommender.h
 * --------------------------------------------------------------------------
 Build:
      Limit = InData<1>
+     ReportInterval = InData<2>
+     ReportBreaks   = InData<3>
+     
      Line = ''
      Ct = 0
      
      ClearFile F.PAIRS
+     ClearFile F.CLIENT_BOOKS
+     ClearFile F.BOOK_CLIENTS
      
      Select F.ORDERS
      Fin = @False
@@ -105,6 +110,12 @@ Build:
         ReadNext OrderId Else Fin = @TRUE
      Until Fin Or (Limit And (Ct > Limit)) Do
         GoSub BuildOrderToModel
+        If ReportInterval And Not(Mod(Ct,ReportInterval)) Then
+           Crt @(0):'Processed sales ': Ct:
+           If ReportBreaks Then
+              Input Wait
+           End
+        End
      Repeat
      
      Return
@@ -171,7 +182,10 @@ BuildOrderToModel:
         End
         
      Next
-     Write ClientBooks On F.CLIENT_BOOKS, ClientId
+     Write ClientBooks On F.CLIENT_BOOKS, ClientId On Error
+        Crt 'Write Error ':
+        DEBUG
+     End
      
      
      Return
@@ -217,6 +231,7 @@ Recommend:
         PairRec = ''
      End
      
+     
      BookList = Raise(PairRec<1>)
      BookCounts = Raise(PairRec<2>)
      
@@ -248,7 +263,8 @@ Recommend:
            End
         Next
      End
-     
+
+  
 * Finally organize based on their weighted counts
      OrderedCounts = ''
      OrderedBooks = ''

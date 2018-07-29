@@ -1,0 +1,129 @@
+$IFDEF UNIDATA
+$BASICTYPE "P"
+$ENDIF
+       SUBROUTINE u2_book_search( InData, OutData, ErrText )
+* ---------------------------------------------------------------------------
+*  @@Name        : u2_book_search
+*  @@Description : quick and dirty book selection
+*  @@Version     : 1.0
+* ---------------------------------------------------------------------------
+*  Brief Description
+*  -----------------
+*  @@INFO
+* ---------------------------------------------------------------------------
+*  Warnings
+*  --------
+*
+* ---------------------------------------------------------------------------
+*  Modification History
+*  --------------------
+*  @@Log
+* ---------------------------------------------------------------------------
+* Keywords
+* --------
+*
+* --------------------------------------------------------------------------
+* To Do List
+* ----------
+*
+* --------------------------------------------------------------------------
+$IFDEF UNIVERSE
+$OPTIONS PICK
+$ENDIF
+
+$INCLUDE books.inc U2_BOOKS.h
+
+       OutData = ''
+       ErrText = ''
+
+       Open 'U2_AUTHORS' To F.AUTHORS Else
+          ErrText = 'Cannot open the U2_AUTHORS File'
+          RETURN
+       End
+
+       Open 'U2_BOOKS' To F.BOOKS Else
+          ErrText = 'Cannot open the U2_BOOKS File'
+          RETURN
+       End
+
+       Crt 'Enter a book number or search term : ':
+       Input Ans
+       If Ans = '' Then
+          Return
+       End
+       Begin Case
+          Case Ans Match '1N0N'
+             OutData = Ans
+          Case 1
+             Ans = UpCase(Ans)
+             GoSub DoSelection
+       End Case
+
+       RETURN
+* --------------------------------------------------------------------------
+* DoSelection
+* --------------------------------------------------------------------------
+DoSelection:
+
+       Cmd = 'SSELECT U2_BOOKS WITH U_TITLE LIKE "...' : Ans : '..."'
+       Cmd := ' OR WITH U_AUTHOR_NAME LIKE "...' : Ans : '..."'
+       Perform Cmd
+       ReadList IdList Else IdList = ''
+       
+       If IdList <> '' Then
+          NoBooks = DCount(IdList,@FM)
+          GoSub ShowList
+       End
+       RETURN
+* --------------------------------------------------------------------------
+* ShowList
+* --------------------------------------------------------------------------
+ShowList:
+       Top = 0
+       Depth = @CrtHigh - 3
+       PY = @CrtHigh - 2
+       Done = @False
+       Refresh = @True
+       Loop
+          For This = 1 To Depth
+             BookId = IdList<Top + This>
+             Line = ''
+             If BookId Then
+                Read BookRec From F.BOOKS, BookId Else
+                   BookRec = ''
+                End
+                Line = (This 'L#3'):(BookId 'L#3')
+                Line := ' ':(BookRec<U2_BOOKS.TITLE> 'L#50')
+             End
+             Crt @(0,This):Line:@(-4):
+
+          Next
+          Crt @(0,PY):@(-4):'Enter line number, (U)p, (D)own or (Q)uit : ':
+          Refresh = @False
+          Input Ans
+          Ans = UpCase(Ans)
+          Begin Case
+             Case Ans = 'U'
+                Top -= Depth
+                If Top < 0 Then Top = 0
+             Case Ans = 'D'
+                Top += Depth
+                If Top > NoBooks Then
+                   Top = 0
+                End
+             Case Ans Match '1N0N'
+                BookId = IdList<Top + Ans>
+                If BookId Then
+                   Done = @True
+                End
+             Case Ans = 'Q'
+                BookId = ''
+                Done = @True
+          End Case
+       Until Done Do
+       Repeat
+     
+       OutData = BookId
+       
+       RETURN
+

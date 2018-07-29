@@ -38,13 +38,16 @@ If Num(InData<1>) Then
 StartDate = OConv(InData<1>,'D4')
 EndDate   = OConv(InData<2>,'D4')
 End
+
+* Get the absolute path
 Path = ''
-OpenPath '..\..\bookstore\web\images' To IMAGES Then
-  Status FStat From IMAGES Then
+OpenPath '..\..\bookstore\web\work' To WORK Then
+  Status FStat From WORK Then
     Path = FStat<27>
    End
 End
 
+Path := '\'
 ModuleName = 'plotsalesgenres'
 FuncName = 'run'
 
