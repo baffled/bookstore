@@ -58,12 +58,15 @@ class u2_recommender:
         # clientId = order[0]
         # if len(order) < 10: return
         # for bookId in order[9]:
-        
+        order = orderDA.to_list()
         if orderDA.dcount(u2py.FM) < 10: return
-        s = orderDA.extract(10).dcount(u2py.VM)        
-        clientId = str(orderDA.extract(1))
-        for i in range(1, s+1):
-           bookId = str(orderDA.extract(10,i))
+        s = orderDA.extract(10).dcount(u2py.VM)
+        if s < 2:
+           bookList = [order[9]]
+        else:
+           bookList = order[9]        
+        clientId = str(order[0])
+        for bookId in bookList:
            if clientId not in self.clientBooks: 
               self.clientBooks[clientId] = [bookId]              
            else:
